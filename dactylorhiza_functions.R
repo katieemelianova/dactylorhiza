@@ -56,10 +56,18 @@ draw_heatmap<-function(dds_object){
   dds_fpkm<-fpkm(dds_object$dds)
   new_column_order<-dds_fpkm %>% colnames %>% sort()
   dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-  dds_significant<-dds_object$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.0005) %>% rownames()
+  dds_significant<-dds_object$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
   pheatmap(dds_fpkm[rownames(dds_fpkm) %in% dds_significant,], 
            scale = "row", 
            cluster_cols = FALSE,
            cluster_rows = FALSE,
            show_rownames = FALSE)
 }
+
+get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05){
+  de_genes<-results_object$results %>% data.frame() %>% filter(log2FoldChange > fold_change & padj < pvalue) %>% rownames()
+  return(de_genes)
+}
+
+
+

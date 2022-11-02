@@ -9,6 +9,11 @@ library(topGO)
 library(pheatmap)
 source("/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza_functions.R")
 
+###########################################################
+#       get root sample data into a data frame            #
+###########################################################
+
+
 # read in table: I got the same names from the RootRNAseq multiplex1 and multiplex2 dirs
 root_samples<-read.table("/Users/katieemelianova/Desktop/Dactylorhiza/Root_samples.txt", header=FALSE, col.names = c("sample_id"))
 
@@ -32,6 +37,20 @@ root_samples$assay<-case_when(endsWith(root_samples$sample_id, "_s") == TRUE ~ "
 
 # now we can filter by the tissue and assay: I think a few repeat libraries from leaf were sequenced along with the root samples
 root_samples %>% filter(tissue == "root" & assay == "RNAseq") %>% dplyr::select(sample_id)
+
+
+###########################################################
+#       get leaf sample data into a data frame            #
+###########################################################
+
+leaf_samples<-read.table("/Users/katieemelianova/Desktop/Dactylorhiza/Leaf_samples.txt", header=FALSE, col.names = c("sample_id"))
+# create new columns detailing  the species, environemt, tissue, assay and location
+leaf_samples$species<-case_when(substr(leaf_samples$sample_id,1,1) == "m" ~ "majalis",
+                                substr(leaf_samples$sample_id,1,1) == "t" ~ "traunsteineri")
+leaf_samples$locality<-case_when(substr(leaf_samples$sample_id,3,3) == "S" ~ "St Ulrich",
+                                 substr(leaf_samples$sample_id,3,3) == "K" ~ "Kitzbuhl")
+leaf_samples$replicate<-substr(leaf_samples$sample_id,4,4)
+
 
 
 #################################################################################################
@@ -93,33 +112,24 @@ root_samples %<>% mutate(treatment=case_when(species == environment ~ "native",
 
 
 
-#########################################################################
-#   baseline DE genes between native majalis and native traunsteineri   #
-#########################################################################
+######################################################################################
+#   baseline DE genes between native majalis and native traunsteineri per locality   #
+######################################################################################
 
 # we want to find out what genes are DE between majalis and traunsteineri in their native areas per locality
 # one comparison for native majalis and traunsteineri in St Ulrich 
 # one comparison for the same but in Kitzbuhl
 
-native_kitzbuhl<-specify_comparison(root_samples, 
-                                    df_counts, 
-                                    "treatment == 'native' & locality == 'Kitzbuhl'") %>% 
-  run_diffexp("species", df$Length)
+native_kitzbuhl<-specify_comparison(root_samples, df_counts, "treatment == 'native' & locality == 'Kitzbuhl'") %>% run_diffexp("species", df$Length)
+native_stulrich<-specify_comparison(root_samples, df_counts, "treatment == 'native' & locality == 'St Ulrich'") %>% run_diffexp("species", df$Length)
 
 
-native_stulrich<-specify_comparison(root_samples, 
-                                    df_counts, 
-                                    "treatment == 'native' & locality == 'St Ulrich'") %>% 
-  run_diffexp("species", df$Length)
+############################################################################################
+#        DE genes between native and transplanted species, regardless of locality       #
+############################################################################################
 
-one<-native_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-two<-native_stulrich$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-
-
-length(one)
-length(two)
-intersect(one, two)
-
+transplant_majalis<-specify_comparison(root_samples, df_counts, 'species == "majalis"') %>% run_diffexp("treatment", df$Length)
+transplant_traunsteineri<-specify_comparison(root_samples, df_counts, 'species == "traunsteineri"') %>% run_diffexp("treatment", df$Length)
 
 
 ############################################################################################
@@ -132,21 +142,31 @@ transplant_majalis_stulrich<-specify_comparison(root_samples, df_counts, 'specie
 transplant_traunsteineri_kitzbuhl<-specify_comparison(root_samples, df_counts, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df$Length)
 transplant_traunsteineri_stulrich<-specify_comparison(root_samples, df_counts, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df$Length)
 
+majalis_vs_traunsteineri_majalis_kitzbuhl<-specify_comparison(root_samples, df_counts, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df$Length)
+majalis_vs_traunsteineri_traunsteineri_kitzbuhl<-specify_comparison(root_samples, df_counts, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df$Length)
+majalis_vs_traunsteineri_majalis_stulrich<-specify_comparison(root_samples, df_counts, 'environment == "majalis" & locality == "St Ulrich"') %>% run_diffexp("species", df$Length)
+majalis_vs_traunsteineri_traunsteineri_stulrich<-specify_comparison(root_samples, df_counts, 'environment == "traunsteineri" & locality == "St Ulrich"') %>% run_diffexp("species", df$Length)
 
-one<-transplant_majalis_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-two<-transplant_majalis_stulrich$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-three<-transplant_traunsteineri_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-four<-transplant_traunsteineri_stulrich$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
 
 
-test<-sapply(one, function(x) str_split(x, ":")[[1]][1]) %>% unname()
 
-mp[[test[2]]]
+p
 
-test %in% names(mp)
+transplant_majalis_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
+transplant_majalis_stulrich$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
+transplant_traunsteineri_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
+transplant_traunsteineri_stulrich$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
 
-intersect(one, two)
-intersect(three, four)
+
+pval<-0.05
+fold_change<-2
+transplant_traunsteineri_stulrich$results %>% data.frame() %>% filter(log2FoldChange > fold_change & padj < pval) %>% rownames()
+
+get_significant_genes(transplant_traunsteineri_stulrich, fold_change = 2, pvalue = 0.05)
+
+results_object<-transplant_traunsteineri_stulrich
+
+results_object$results %>% data.frame() %>% filter(log2FoldChange > integer(fold_change) & padj < integer(pval)) %>% rownames()
 
 
 ################################################################
@@ -155,11 +175,24 @@ intersect(three, four)
 
 mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
 
+
+
+
+one<-transplant_majalis_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+two<-transplant_majalis_stulrich$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+three<-transplant_traunsteineri_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+four<-transplant_traunsteineri_stulrich$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+
+# remove the :cds bt from the ends of the gene names so they match the mappings
 one<-sapply(one, function(x) str_split(x, ":")[[1]][1]) %>% unname()
 two<-sapply(two, function(x) str_split(x, ":")[[1]][1]) %>% unname()
-
 three<-sapply(three, function(x) str_split(x, ":")[[1]][1]) %>% unname()
 four<-sapply(four, function(x) str_split(x, ":")[[1]][1]) %>% unname()
+
+five<-majalis_vs_traunsteineri_majalis_kitzbuhl$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+five<-sapply(five, function(x) str_split(x, ":")[[1]][1]) %>% unname()
+majalis_vs_traunsteineri_majalis_kitzbuhl_go<-get_enriched_terms(five, mp)
+
 
 
 majalis_kitzbuhl_trans<-get_enriched_terms(one, mp)
@@ -173,19 +206,42 @@ traunsteineri_sturich_trans<-get_enriched_terms(four, mp)
 #                          plot heatmaps                       #
 ################################################################
 
+
+
+draw_heatmap(transplant_majalis)
+draw_heatmap(transplant_traunsteineri)
+draw_heatmap(transplant_majalis_kitzbuhl)
+draw_heatmap(transplant_majalis_stulrich)
+draw_heatmap(transplant_traunsteineri_kitzbuhl)
+draw_heatmap(transplant_traunsteineri_stulrich)
+
+
+################################################################
+#                         draw PCA plots                       #
+################################################################
+
+
 # make a dds object from the total root samples (no subsetting)
 root_dds<-specify_comparison(root_samples, df_counts, "1 == 1")
 root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
                                    colData = root_dds[["samples"]],
                                    design = ~ treatment)
 
+test<-varianceStabilizingTransformation(root_dds)
 
+test[,30]
 
+grep("tMK", colnames(test))
 
-draw_heatmap(transplant_majalis_kitzbuhl)
-draw_heatmap(transplant_majalis_stulrich)
-draw_heatmap(transplant_traunsteineri_kitzbuhl)
-draw_heatmap(transplant_traunsteineri_stulrich)
+test %>% colnames()
+
+plotPCA(test, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
+plotPCA(test, intgroup="treatment", ntop = 1000, returnData = FALSE)
+plotPCA(test, intgroup="locality", ntop = 1000, returnData = FALSE)
+plotPCA(test, intgroup="environment", ntop = 1000, returnData = FALSE)
+
+Use 52K gff
+
 
 
 
