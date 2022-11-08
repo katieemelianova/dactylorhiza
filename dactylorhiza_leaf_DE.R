@@ -62,4 +62,48 @@ leaf_samples %<>% mutate(treatment=case_when(species == environment ~ "native",
                                              species != environment ~ "transplant"))
 
 
+########################################################
+#                   make PCA plot                      #
+########################################################
+
+# make a dds object from the total root samples (no subsetting)
+leaf_dds<-specify_comparison(leaf_samples, df_counts_leaf, "1 == 1")
+leaf_dds<-get_dds_object(leaf_dds, "treatment", df_leaf$Length, 5, 8, vst = TRUE)
+plotPCA(leaf_dds, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
+
+
+########################################################
+#             do differential expression               #
+########################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+dds <- DESeq(leaf_dds)
+res <- results(dds)
+
+
+
+head(colData(leaf_dds))
+
+
+get_dds_object()
+
+
+
 

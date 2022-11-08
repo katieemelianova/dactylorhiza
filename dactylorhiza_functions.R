@@ -22,6 +22,22 @@ run_diffexp<-function(comparison, design_term, gene_lengths){
   return(list(dds=dds, results=res))
 }
 
+get_dds_object<-function(comparison, design_term, gene_lengths, cpm, min_samples, vst=FALSE){
+  formula_parsed<-paste("~", design_term)
+  dds <- DESeqDataSetFromMatrix(countData = comparison[["counts"]],
+                                colData = comparison[["samples"]],
+                                design = as.formula(formula_parsed))
+  mcols(dds)$basepairs<-gene_lengths
+  dds <- estimateSizeFactors(dds)
+  idx <- rowSums( counts(dds, normalized=TRUE) >= cpm ) >= min_samples
+  dds <- dds[idx,]
+  if (vst == TRUE) {
+    dds<-varianceStabilizingTransformation(dds)
+    print("running vst")
+  }
+  return(dds)
+}
+
 
 get_enriched_terms<-function(gene_list, mappings){
   # use the gene 2 GOterms mapping provided for D. incarnata
