@@ -46,7 +46,7 @@ root_samples %>% filter(tissue == "root" & assay == "RNAseq") %>% dplyr::select(
 #################################################################################################
 
 # read in each featurecounts file and join them together
-#setwd("Desktop/Dactylorhiza/dactylorhiza_root_featurecounts/")
+setwd("~/Desktop/Dactylorhiza/dactylorhiza_root_featurecounts/")
 df <- list.files(path='/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza_root_featurecounts') %>% 
   lapply(read_tsv, skip=1) %>% 
   purrr::reduce(left_join, by = c("Geneid", "Chr", "Start", "End", "Strand", "Length"))
@@ -110,6 +110,10 @@ transplant_majalis_stulrich<-specify_comparison(root_samples, df_counts, 'specie
 transplant_traunsteineri_kitzbuhl<-specify_comparison(root_samples, df_counts, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df$Length)
 transplant_traunsteineri_stulrich<-specify_comparison(root_samples, df_counts, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df$Length)
 
+############################################################################################
+#        DE genes in each environment between native species and transplanted species      #
+############################################################################################
+
 majalis_vs_traunsteineri_majalis_kitzbuhl<-specify_comparison(root_samples, df_counts, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df$Length)
 majalis_vs_traunsteineri_traunsteineri_kitzbuhl<-specify_comparison(root_samples, df_counts, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df$Length)
 majalis_vs_traunsteineri_majalis_stulrich<-specify_comparison(root_samples, df_counts, 'environment == "majalis" & locality == "St Ulrich"') %>% run_diffexp("species", df$Length)
@@ -118,7 +122,6 @@ majalis_vs_traunsteineri_traunsteineri_stulrich<-specify_comparison(root_samples
 
 
 
-p
 
 transplant_majalis_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
 transplant_majalis_stulrich$results %>% data.frame() %>% filter(padj < 0.05) %>% nrow()
@@ -175,12 +178,22 @@ traunsteineri_sturich_trans<-get_enriched_terms(four, mp)
 ################################################################
 
 
-
+# native vs transplanted majalis, all localities
 draw_heatmap(transplant_majalis)
+
+# native vs transplanted traunsteineri, all localities
 draw_heatmap(transplant_traunsteineri)
+
+# native vs transplanted majalis, kitzbuhl
 draw_heatmap(transplant_majalis_kitzbuhl)
+
+# native vs transplanted majalis, St Ulrich
 draw_heatmap(transplant_majalis_stulrich)
+
+# native vs transplanted traunsteineri, kitzbuhl
 draw_heatmap(transplant_traunsteineri_kitzbuhl)
+
+# native vs transplanted traunsteineri, St Ulrich
 draw_heatmap(transplant_traunsteineri_stulrich)
 
 
@@ -197,11 +210,8 @@ root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
 
 test<-varianceStabilizingTransformation(root_dds)
 
-test[,30]
-
-grep("tMK", colnames(test))
-
-test %>% colnames()
+# remove outlier sample
+test<-test[,-30]
 
 plotPCA(test, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
 plotPCA(test, intgroup="treatment", ntop = 1000, returnData = FALSE)
@@ -244,3 +254,26 @@ head(root_fpkms, 1000)
 
 
 
+read_tsv("~/Desktop/Dactylorhiza/fungal_blast_pid_len_eval") %>%
+  set_colnames(c("qseqid", "pid", "length", "evalue")) %>%
+  filter(length > 100 & pid > 95) %>%
+  dplyr::select(qseqid) %>%
+  unique() %>%
+  nrow()
+
+
+#######
+sarg<-read_csv("sargasso_stats.txt", col_names = c("strategy", "test", "Assigned_Hits_incarnata", "Assigned_Reads_incarnata", "Rejected_Hits_incarnata", "Rejected_Reads_incarnata", "Ambiguous_Hits_incarnata", "Ambiguous_Reads_incarnata", "Assigned_Hits_fuchsii", "Assigned_Reads_fuchsii", "Rejected_Hits_fuchsii", "Rejected_Reads_fuchsii", "Ambiguous_Hits_fuchsii", "Ambiguous_Reads_fuchsii"))
+
+sarg %>% dplyr::select(Assigned_Reads_incarnata, Ambiguous_Reads_incarnata, Rejected_Reads_incarnata)
+
+sarg %>% colnames()
+
+sarg %>% mutate(incarnata_pct_accepted_reads=100*(Assigned_Reads_incarnata/(Assigned_Reads_incarnata + Ambiguous_Reads_incarnata + Rejected_Reads_incarnata))) %>% 
+  mutate(fuchsii_pct_accepted_reads=100*(Assigned_Reads_fuchsii/(Assigned_Reads_fuchsii + Rejected_Reads_fuchsii + Ambiguous_Reads_fuchsii))) %>% 
+  dplyr::select(strategy, incarnata_pct_accepted_reads, fuchsii_pct_accepted_reads, Assigned_Reads_incarnata, Assigned_Reads_fuchsii) 
+
+
+
+mutate(fuchsii_pct_accepted_reads=100*(Assigned_Reads_fuchsii/Assigned_Reads_fuchsii + Rejected_Reads_fuchsii + Ambiguous_Reads_fuchsii)) %>% 
+  
