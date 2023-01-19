@@ -130,9 +130,9 @@ resultsNames(all_samples_species_treatment$dds)
 results(all_samples_species_treatment$dds, name = "species_traunsteineri_vs_majalis")
 
 # draw a heatmap of each comaprison
-draw_heatmap(all_samples_treatment)
-draw_heatmap(all_samples_species_treatment)
-draw_heatmap(all_samples_species_locality_treatment)
+draw_heatmap(all_samples_treatment, annotation_values = c("species", "treatment"))
+draw_heatmap(all_samples_species_treatment, annotation_values = c("species", "treatment"))
+draw_heatmap(all_samples_species_locality_treatment, annotation_df = annotation_bar)
 draw_heatmap(all_samples_species_treatment_interaction)
 
 # get sig DE genes for each model fitted
