@@ -7,6 +7,8 @@ library(tidyverse)
 library(DESeq2)
 library(topGO)
 library(pheatmap)
+library(VennDiagram)
+library(grDevices)
 source("/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza/dactylorhiza_functions.R")
 
 ###########################################################
@@ -106,19 +108,66 @@ dds <- estimateSizeFactors(dds)
 idx <- rowSums( counts(dds, normalized=TRUE) >= 8 ) >= 5
 dds <- dds[idx,]
 dds <- DESeq(dds)
-
 res <- results(dds)
-res %>% data.frame()
-
-res %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05)
-
-draw_heatmap(dds)
 
 
-### now trying to specify more complicated design using the funbction
-all_samples<-specify_comparison(root_samples, df_counts, "1 == 1") %>% run_diffexp("species + treatment + species:treatment", df$Length)
-draw_heatmap(all_samples)
 
+
+### now trying to specify fancier designs using the functions defined in dact_funxtions.R
+all_samples_treatment<-specify_comparison(root_samples, df_counts, "1 == 1") %>% run_diffexp("treatment", df$Length)
+all_samples_species_treatment<-specify_comparison(root_samples, df_counts, "1 == 1") %>% run_diffexp("species + treatment", df$Length)
+all_samples_species_locality_treatment<-specify_comparison(root_samples, df_counts, "1 == 1") %>% run_diffexp("species + locality + treatment", df$Length)
+all_samples_species_treatment_interaction<-specify_comparison(root_samples, df_counts, "1 == 1") %>% run_diffexp("species + treatment + species:treatment", df$Length)
+
+# one way of getting DE genes for a partcular effect
+results(all_samples_species_treatment$dds, contrast = c("species", "majalis", "traunsteineri")) %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% nrow()
+results(all_samples_species_treatment$dds, contrast = c("treatment", "native", "transplant")) %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% nrow()
+
+# list the names of different effects in the design
+resultsNames(all_samples_species_treatment$dds)  
+
+# get results for one of the effects only 
+results(all_samples_species_treatment$dds, name = "species_traunsteineri_vs_majalis")
+
+# draw a heatmap of each comaprison
+draw_heatmap(all_samples_treatment)
+draw_heatmap(all_samples_species_treatment)
+draw_heatmap(all_samples_species_locality_treatment)
+draw_heatmap(all_samples_species_treatment_interaction)
+
+# get sig DE genes for each model fitted
+a<-get_significant_genes(all_samples_species)
+b<-get_significant_genes(all_samples_species_treatment)
+c<-get_significant_genes(all_samples_species_locality_treatment)
+d<-get_significant_genes(all_samples_species_treatment_interaction)
+
+length(a)
+length(b)
+length(c)
+length(d)
+
+# plot a venn diagram of the genes significantly DE in each fitted model
+venn<-venn.diagram(
+  x = list(a, b, c, d),
+  category.names = c("trt" , "sp+trt" , "sp+loc+trt", "sp+trt+sp:trt"),
+  filename = NULL)
+
+pdf(file="venn.pdf")
+grid.draw(venn)
+dev.off()
+
+intersect(a,b) %>% length()
+intersect(a,c) %>% length()
+intersect(b,c) %>% length()
+
+mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
+test_species<-get_significant_genes(all_samples_species, mappings_format = TRUE)
+test_species_treatment<-get_significant_genes(all_samples_species_treatment, mappings_format=TRUE)
+test_species_treatment_interaction<-get_significant_genes(all_samples_species_treatment_interaction, mappings_format=TRUE)
+
+test_enrich_species<-get_enriched_terms(test_species, mp) %>% data.frame() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected)
+test_enrich_species_treatment<-get_enriched_terms(test_species_treatment, mp) %>% data.frame() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected)
+test_enrich_species_treatment_interaction<-get_enriched_terms(test_species_treatment_interaction, mp) %>% data.frame() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected)
 
 
 ############################################################################################
@@ -209,14 +258,20 @@ transplant_traunsteineri_stulrich_enrich<-return_enrichment_table(transplant_tra
 #                         draw PCA plots                       #
 ################################################################
 
+model.matrix(~test$species + test$locality)
 
 # make a dds object from the total root samples (no subsetting)
 root_dds<-specify_comparison(root_samples, df_counts, "1 == 1")
 root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
                                    colData = root_dds[["samples"]],
-                                   design = ~ treatment)
+                                   design = ~ species + locality)
 
 test<-varianceStabilizingTransformation(root_dds)
+test$locality
+test_limma<-limma::removeBatchEffect(assay(test), test$locality, design=model.matrix(~test$species + test$locality))
+
+
+
 
 # remove outlier sample
 test<-test[,-30]
