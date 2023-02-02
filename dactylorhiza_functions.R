@@ -63,27 +63,58 @@ get_enriched_terms<-function(gene_list, mappings){
   # generate summary tane and return it
   allRes <- GenTable(sampleGOdata, classicFisher = resultFisher,
                      classicKS = resultKS, elimKS = resultKS.elim,
-                     orderBy = "classicFisher", ranksOf = "classicFisher", topNodes = 10)
+                     orderBy = "classicFisher", ranksOf = "classicFisher", topNodes = 30,
+                     numChar=1000 )
   #allRes<-GenTable(sampleGOdata, Fis = resultFisher, topNodes = 20)
   return(allRes)
 }
 
-draw_heatmap<-function(dds_object){
+return_enrichment_table<-function(de_object){
+  mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
+  top10_enriched<-get_significant_genes(de_object, mappings_format=TRUE) %>% 
+    get_enriched_terms(mp) %>% 
+    data.frame() %>% 
+    filter(classicFisher < 0.05) %>% 
+    dplyr::select(Term, Annotated, Significant, Expected)
+  return(top10_enriched)
+}
+
+# a way to make a data frame of values to annotate a heatmap with on the fly
+construct_heatmap_annotation_df<-function(dds_object, value_list){
+  sapply(value_list, function(x) dds_object[["dds"]][[x]]) %>% data.frame()
+}
+
+# annotation_values here are heatmpa annotations, adding a coloured bar 
+# along the top indicating different groups
+draw_heatmap<-function(dds_object, annotation_values = NULL){
   dds_fpkm<-fpkm(dds_object$dds)
   new_column_order<-dds_fpkm %>% colnames %>% sort()
   dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-  dds_significant<-dds_object$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
-  pheatmap(dds_fpkm[rownames(dds_fpkm) %in% dds_significant,], 
+  dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
+  dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
+  if(!(is.null(annotation_values))){
+    annotation_df <- construct_heatmap_annotation_df(dds_object, annotation_values)
+    rownames(annotation_df) <- colnames(dds_toplot)
+  } else {
+    annotation_df <- NULL
+  }
+  pheatmap(dds_toplot, 
            scale = "row", 
            cluster_cols = FALSE,
-           cluster_rows = FALSE,
-           show_rownames = FALSE)
+           cluster_rows = TRUE,
+           show_rownames = FALSE,
+           treeheight_row = 0, treeheight_col = 0,
+           annotation_col = annotation_df)
 }
 
-get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05){
-  de_genes<-results_object$results %>% data.frame() %>% filter(log2FoldChange > fold_change & padj < pvalue) %>% rownames()
+
+get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE){
+  de_genes<-results_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
+  # to make the gene names match with the names in the GO term mappings, we need to cut off the last bit (optional)
+  if (mappings_format == TRUE){
+    de_genes<-sapply(de_genes, function(x) str_split(x, ":")[[1]][1]) %>% unname()
+  }
   return(de_genes)
 }
-
 
 

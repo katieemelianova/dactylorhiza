@@ -9,7 +9,7 @@ library(topGO)
 library(pheatmap)
 library(VennDiagram)
 library(grDevices)
-source("/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza/dactylorhiza_functions.R")
+source("dactylorhiza_functions.R")
 
 ###########################################################
 #       get root sample data into a data frame            #
@@ -17,7 +17,7 @@ source("/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza/dactylorhiza_fu
 
 
 # read in table: I got the same names from the RootRNAseq multiplex1 and multiplex2 dirs
-root_samples<-read.table("/Users/katieemelianova/Desktop/Dactylorhiza/Root_samples.txt", header=FALSE, col.names = c("sample_id"))
+root_samples<-read.table("Root_samples.txt", header=FALSE, col.names = c("sample_id"))
 
 # create new columns detailing  the species, environemt, tissue, assay and location
 root_samples$species<-case_when(substr(root_samples$sample_id,1,1) == "m" ~ "majalis",
@@ -48,8 +48,7 @@ root_samples %>% filter(tissue == "root" & assay == "RNAseq") %>% dplyr::select(
 #################################################################################################
 
 # read in each featurecounts file and join them together
-setwd("~/Desktop/Dactylorhiza/dactylorhiza_root_featurecounts/")
-df <- list.files(path='/Users/katieemelianova/Desktop/Dactylorhiza/dactylorhiza_root_featurecounts') %>% 
+df <- list.files(path='dactylorhiza_root_featurecounts') %>% 
   lapply(read_tsv, skip=1) %>% 
   purrr::reduce(left_join, by = c("Geneid", "Chr", "Start", "End", "Strand", "Length"))
 
