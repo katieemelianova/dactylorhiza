@@ -145,10 +145,18 @@ rbind(mT_5pct, mM_5pct)
 all_5<-all %>% filter(value > 5)
 
 
+
+env_labs <- c("D. traunsteineri environment", "D. majalis environment")
+names(env_labs) <- c("traunsteineri", "majalis")
+sp_labs <- c("D. traunsteineri", "D. majalis")
+names(sp_labs) <- c("traunsteineri", "majalis")
+labeller = labeller(environment = env_labs, species = sp_labs)
+
 ggplot(all_5, aes(x="", y=value, fill=B)) +
   geom_bar(stat="identity", width=1, position = "fill") +
   coord_polar("y", start=0) +
-  facet_wrap(~environment + species) +
+  facet_wrap(~environment + species, labeller = labeller(environment = env_labs, species = sp_labs)) +
   theme_void() +
-  scale_fill_brewer(palette = "Set3", name = "Fungal order")
+  scale_fill_brewer(palette = "Set3", name = "Fungal order") +
+  theme(strip.text.x = element_text(size = 10))
 
