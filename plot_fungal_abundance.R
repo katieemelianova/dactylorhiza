@@ -10,13 +10,11 @@ library(reshape2)
 library(viridis)
 
 
-read_tax<-function(file, sampleid, rank){
+read_tax<-function(file, sampleid, species, environment, locality, rank){
   exam<-read_tsv(file) %>% mutate(sample=sampleid) %>% filter(RANK == rank)
   exam %<>% separate(TAXPATHSN, c(NA, NA, NA, "B", NA, NA))
   return(exam)
 }
-
-
 
 mTS2r_data<-read_tax("/Users/katieemelianova/Desktop/Dactylorhiza/abundances/mTS2r_abundances.txt", "mTS2r", "order")
 tMK2r_data<-read_tax("/Users/katieemelianova/Desktop/Dactylorhiza/abundances/tMK2r_abundances.txt", "tMK2r", "order")
@@ -99,7 +97,7 @@ all<-rbind(mTS2r_data,
            ) %>% 
   filter(B != "Unclassified") %>%
   dplyr::select(B, PERCENTAGE, sample) %>%
-  filter(PERCENTAGE > 5) %>%
+  filter(PERCENTAGE > 2) %>%
   melt()
 
 
@@ -107,4 +105,50 @@ all<-rbind(mTS2r_data,
 ggplot(data=all, aes(x=sample, y=value, fill=B)) +
   geom_bar(stat="identity")
 
+
+all$species<-case_when(substr(all$sample,1,1) == "m" ~ "majalis",
+          substr(all$sample,1,1) == "t" ~ "traunsteineri")
+all$locality<-case_when(substr(all$sample,3,3) == "S" ~ "St Ulrich",
+              substr(all$sample,3,3) == "K" ~ "Kitzbuhl")
+all$environment<-case_when(substr(all$sample,2,2) == "M" ~ "majalis",
+                          substr(all$sample,2,2) == "T" ~ "traunsteineri")
+
+
+
+
+
+
+
+
+#all_temp<-all_5pct %>% mutate(V5 = case_when(species == "majalis" ~ value*(-1),
+#                              species == "traunsteineri" ~ value
+#                      ))
+#brks <- seq(-15000000, 15000000, 5000000)
+#lbls = paste0(as.character(c(seq(15, 0, -5), seq(5, 15, 5))), "m")
+#
+#ggplot(all_temp, aes(x = B, y = V5, fill = species)) +
+#  geom_bar(stat = "identity", width = .6) +   # draw the bars
+#  scale_y_continuous(breaks = brks,
+#                     labels = lbls) +
+#  coord_flip() +  # Flip axes
+#  scale_fill_brewer(palette = "Accent") +  # Color palette
+#  facet_wrap(~environment)
+
+
+
+mT_5pct<-all %>% filter(value > 5 & species == "majalis" & environment=="traunsteineri")
+mM_5pct<-all %>% filter(value > 5 & species == "majalis" & environment=="majalis")
+tT_5pct<-all %>% filter(value > 5 & species == "traunsteineri" & environment=="traunsteineri")
+tM_5pct<-all %>% filter(value > 5 & species == "traunsteineri" & environment=="majalis")
+
+rbind(mT_5pct, mM_5pct)
+all_5<-all %>% filter(value > 5)
+
+
+ggplot(all_5, aes(x="", y=value, fill=B)) +
+  geom_bar(stat="identity", width=1, position = "fill") +
+  coord_polar("y", start=0) +
+  facet_wrap(~environment + species) +
+  theme_void() +
+  scale_fill_brewer(palette = "Set3", name = "Fungal order")
 
