@@ -80,10 +80,20 @@ plotPCA(root_sargasso_dds_vst, intgroup=c("species", "subgenome"), ntop = 1000, 
 ###########################################################
 
 # get normalised counts (default median ratio)
-root_sargasso_dds_norm<-counts(root_sargasso_dds, normalized=TRUE)
+root_sargasso_dds_norm<-counts(root_sargasso_dds, normalized=TRUE) 
+
+
+
+#index the genes you want to keep by minimum expression of X in N samples
+idx <- rowSums( root_sargasso_dds_norm >= 5 ) >= 30 
+
+# use that index to select out the actual rows in the normalised expression marix
+root_sargasso_dds_norm <- root_sargasso_dds_norm[idx,] %>% data.frame()
+
 
 # remove genes where combinaed expression is less than 5 (normalised)
-root_sargasso_dds_norm<-root_sargasso_dds_norm[rowSums(root_sargasso_dds_norm) > 5,] %>% data.frame()
+#root_sargasso_dds_norm<-root_sargasso_dds_norm[rowSums(root_sargasso_dds_norm) > 5,] %>% data.frame()
+tibble(root_sargasso_dds_norm) %>% colnames()
 
 
 
@@ -150,12 +160,87 @@ h1h2_all %<>% mutate(test=case_when(h1h2native > 5 & h1h2transplant < 5 ~ "nativ
                               h1h2transplant < 5 & h1h2native < 5 ~ "none homeolog shift"))
 
 
-ggplot(h1h2_all, aes(x=h1h2native, y=h1h2transplant, color=test)) + 
+ggplot(h1h2_all, aes(x=h1h2native, y=h1h2transplant)) + 
   geom_point() +
   ylab("incarnata:fuchsii homeolog ratio transplant") + 
   xlab("incarnata:fuchsii homeolog ratio native")
 
 
+
+
+
+
+# You want all points where intercept + x is more than y: 
+# df$is_below <- 25 + df$x > df$y. 
+# To clarify: you want all points (x, y) where the line (25 + 1*x) is above (>) the y-value. – 
+
+plot(h1h2_all$h1h2native, h1h2_all$h1h2transplant, xlab="incarnata:fuchsii homeolog ratio native", ylab="incarnata:fuchsii homeolog ratio transplant")
+abline(a=6.5,b=1)
+abline(a=-7,b=1)
+
+abline(a=-6.5,b=-1)
+abline(a=6.5,b=-1)
+abline(a=2.5,b=1)
+abline(a=-2.3,b=1)
+
+abline(a=-2.3,b=-1)
+abline(a=-18.3,b=-1)
+abline(a=17.3,b=-1)
+
+
+
+
+
+h1h2_all %<>% mutate(cluster=case_when((6.5 + 1 * h1h2native) < h1h2transplant ~ "cluster1",
+                                            (-7 + 1 * h1h2native) > h1h2transplant ~ "cluster2",
+                                            (-6.5 + -1 * h1h2native) > h1h2transplant & (2.2 + 1 * h1h2native) > h1h2transplant & (-2.3 + 1 * h1h2native) < h1h2transplant ~ "cluster3",
+                                            (-6.5 + -1 * h1h2native) < h1h2transplant & (6.5 + -1 * h1h2native) > h1h2transplant & (2.5 + 1 * h1h2native) > h1h2transplant & (-2.3 + 1 * h1h2native) < h1h2transplant  ~ "cluster4",
+                                            (2.5 + 1 * h1h2native) < h1h2transplant & (-2.3 + -1 * h1h2native) < h1h2transplant ~ "cluster5",
+                                            (2.5 + 1 * h1h2native) < h1h2transplant & (-2.3 + -1 * h1h2native) > h1h2transplant ~ "cluster6",
+                                            (-2.3 + 1 * h1h2native) > h1h2transplant & (-2.3 + -1 * h1h2native) > h1h2transplant ~ "cluster7",
+                                            (-2.3 + 1 * h1h2native) > h1h2transplant & (-2.3 + -1 * h1h2native) < h1h2transplant ~ "cluster8",
+                                            (-2.3 + 1 * h1h2native) < h1h2transplant & (6.5 + -1 * h1h2native) < h1h2transplant & (2.5 + 1 * h1h2native) > h1h2transplant ~ "cluster9",
+                                            ))
+
+
+
+ggplot(h1h2_all, aes(x=h1h2native, y=h1h2transplant, color=cluster)) + 
+  geom_point() +
+  ylab("incarnata:fuchsii homeolog ratio transplant") + 
+  xlab("incarnata:fuchsii homeolog ratio native")
+
+clust1<-h1h2_all %>% filter(cluster == "cluster1") %>% rownames()
+clust2<-h1h2_all %>% filter(cluster == "cluster2") %>% rownames()
+clust3<-h1h2_all %>% filter(cluster == "cluster3") %>% rownames()
+clust4<-h1h2_all %>% filter(cluster == "cluster4") %>% rownames()
+clust5<-h1h2_all %>% filter(cluster == "cluster5") %>% rownames()
+clust6<-h1h2_all %>% filter(cluster == "cluster6") %>% rownames()
+clust7<-h1h2_all %>% filter(cluster == "cluster7") %>% rownames()
+clust8<-h1h2_all %>% filter(cluster == "cluster8") %>% rownames()
+clust9<-h1h2_all %>% filter(cluster == "cluster9") %>% rownames()
+
+
+
+clust1_enrich<-get_enriched_terms(clust1, mp) 
+clust2_enrich<-get_enriched_terms(clust2, mp) 
+clust3_enrich<-get_enriched_terms(clust3, mp) 
+clust4_enrich<-get_enriched_terms(clust4, mp) 
+clust5_enrich<-get_enriched_terms(clust5, mp) 
+clust6_enrich<-get_enriched_terms(clust6, mp)
+clust7_enrich<-get_enriched_terms(clust7, mp) 
+clust8_enrich<-get_enriched_terms(clust8, mp) 
+clust9_enrich<-get_enriched_terms(clust9, mp) 
+
+
+clust1_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust2_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust3_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust4_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust5_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust6_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust7_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust8_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
+clust9_enrich %>% tibble() %>% filter(classicFisher < 0.05) %>% dplyr::select(Term) %>% pull()
 
 ##################################################################
 #           GO term enrichment of homeolog shift genes           #
@@ -172,25 +257,18 @@ transplant_shift_genes<-h1h2_all %>% filter(test == "transplant homeolog shift")
 get_enriched_terms(transplant_shift_genes, mp) 
 
 
+test<-h1h2_all %>% filter(cluster == "cluster1") %>% rownames()
+
+
+test 
 
 
 
+test2<-root_sargasso_dds_norm[test,] %>% dplyr::select(contains("fuchsii")) %>% rownames_to_column(var="gene") %>% melt() %>% dplyr::select(-c("variable")) %>% mutate(species="fucshii")
+test3<-root_sargasso_dds_norm[test,] %>% dplyr::select(contains("incarnata")) %>% rownames_to_column(var="gene") %>% melt() %>% dplyr::select(-c("variable")) %>% mutate(species="incarnata")
+test4<-rbind(test2, test3)
 
-
-
-test_species<-get_significant_genes(all_samples_species, mappings_format = TRUE)
-
-
-
-
-de_genes<-sapply(de_genes, function(x) str_split(x, ":")[[1]][1]) %>% unname()
-
-
-
-
-
-
-
+ggplot(data = test4, aes(x=gene, y=log(value))) + geom_boxplot(aes(fill=species))
 
 
 
@@ -203,43 +281,4 @@ de_genes<-sapply(de_genes, function(x) str_split(x, ":")[[1]][1]) %>% unname()
 
 
 
-
-
-
-
-traunsteineri_incarnata_transplant<-specify_comparison(root_samples_sargasso, root_sargasso_dds_norm, 'species == "traunsteineri" & subgenome == "incarnata" & treatment == "transplant"')$counts
-
-# get traunsteineri transplanted and transplanted incarnata nornalised expression values
-traunsteineri_incarnata_native<-specify_comparison(root_samples_sargasso, root_sargasso_dds_norm, 'species == "traunsteineri" & subgenome == "incarnata" & treatment == "native"')$counts
-traunsteineri_incarnata_transplant<-specify_comparison(root_samples_sargasso, root_sargasso_dds_norm, 'species == "traunsteineri" & subgenome == "incarnata" & treatment == "transplant"')$counts
-
-
-
-# join into a data frame
-traunsteineri_incarnata<-data.frame(tfn=rowMeans(traunsteineri_incarnata_native),
-                                  tft=rowMeans(traunsteineri_incarnata_transplant))
-
-# add a small number to everything to prevent NAN happening
-traunsteineri_incarnata<-traunsteineri_incarnata + 0.00001
-
-# make a new column calculating the ratio of native to transplanted expression
-traunsteineri_incarnata %<>% mutate(transplant_ratio=tfn/tft) %>%
-  filter(transplant_ratio < 300)
-
-#make a boxplot
-boxplot(traunsteineri_incarnata$transplant_ratio)
-
-#get a summary
-summary(traunsteineri_incarnata$transplant_ratio)
-
-
-
-par(mfrow = c(1, 2))
-
-
-boxplot(traunsteineri_fucshii$transplant_ratio)
-boxplot(traunsteineri_incarnata$transplant_ratio)
-
-
-traunsteineri_fucshii %>% filter(transplant_ratio > 10 & abs(tfn - tft) > 5)
 
