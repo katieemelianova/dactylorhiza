@@ -140,49 +140,107 @@ traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_count
 
 
 
+###########################################
+#      Plotting constitutively DEGs       #
+###########################################
+
+pvalue_threshold <- 0.1
+logfc_threshold<-0.5
+
+tmM_stu_root<-traunsteineri_majalis_root_M_stulrich$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
 
 
-x<-traunsteineri_majalis_root_M_stulrich$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-y<-traunsteineri_majalis_root_T_stulrich$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-
-x<-traunsteineri_majalis_root_M_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-y<-traunsteineri_majalis_root_T_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-
-
-x<-traunsteineri_majalis_leaf_M_stulrich$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-y<-traunsteineri_majalis_leaf_T_stulrich$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-
-x<-traunsteineri_majalis_leaf_M_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
-y<-traunsteineri_majalis_leaf_T_kitzbuhl$results %>% data.frame() %>% filter(padj < 0.1 & abs(log2FoldChange) > 0.5) %>% dplyr::select(log2FoldChange) %>% filter(log2FoldChange < 10) %>% rownames_to_column(var="gene_id")
+tmT_stu_root<-traunsteineri_majalis_root_T_stulrich$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
 
 
+tmM_ktz_root<-traunsteineri_majalis_root_M_kitzbuhl$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
 
-z<-inner_join(x, y, by="gene_id")
-colnames(z)<-c("gene_id", "majalis_env", "traunst_env")
 
+tmT_ktz_root<-traunsteineri_majalis_root_T_kitzbuhl$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
 
-ggplot(z, aes(x=majalis_env, y=traunst_env)) +
+tmM_stu_leaf<-traunsteineri_majalis_leaf_M_stulrich$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
+
+tmT_stu_leaf<-traunsteineri_majalis_leaf_T_stulrich$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
+
+tmM_ktz_leaf<-traunsteineri_majalis_leaf_M_kitzbuhl$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
+
+tmT_ktz_leaf<-traunsteineri_majalis_leaf_T_kitzbuhl$results %>% 
+  data.frame() %>% 
+  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  dplyr::select(log2FoldChange) %>% 
+  filter(log2FoldChange < 10) %>% 
+  rownames_to_column(var="gene_id")
+
+stu_root<-inner_join(tmM_stu_root, 
+                     tmT_stu_root, 
+                     by="gene_id") %>% mutate(comparison="stu_root") %>%
+  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+
+ktz_root<-inner_join(tmM_ktz_root, 
+                     tmT_ktz_root, 
+                     by="gene_id") %>% mutate(comparison="ktz_root") %>%
+  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+
+stu_leaf<-inner_join(tmM_stu_leaf, 
+                     tmT_stu_leaf, 
+                     by="gene_id") %>% mutate(comparison="stu_leaf") %>%
+  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+
+ktz_leaf<-inner_join(tmM_ktz_leaf, 
+                     tmT_ktz_leaf, 
+                     by="gene_id") %>% mutate(comparison="ktz_leaf") %>%
+  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+
+all_bound<-rbind(stu_root,
+      ktz_root,
+      stu_leaf,
+      ktz_leaf)
+
+ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=comparison)) +
   geom_point()
 
 
-# getv the intersection of the two lists of DE genes
-# n.b. I need to change this to take into account direction of change
-inter1<-intersect(get_significant_genes(traunsteineri_majalis_root_M_stulrich), get_significant_genes(traunsteineri_majalis_root_T_stulrich))
-inter2<-intersect(get_significant_genes(traunsteineri_majalis_leaf_M_stulrich), get_significant_genes(traunsteineri_majalis_leaf_T_stulrich))
-inter<-c(inter1, inter2)
-
-
-test<-get_dds_object(specify_comparison(root_samples, df_counts_root, 'locality == "St Ulrich"'), 
-               "~treatment",
-               df_lengths_root,
-               5,
-               10)
-
-
-pheatmap::pheatmap(fpkm(test)[inter,])
-
-
-draw_heatmap(fpkm(test)[inter,], custom = TRUE)
+#### maybe for later, splitting up the groups of genes to annotate separately 
+#### but not sure if its worth it due to now sign DEGs
+plot(all_bound$majalis_env, all_bound$traunst_env)
+abline(a=0,b=2.5)
+abline(a=0,b=-3)
+abline(a=0.5,b=0)
 
 
 
@@ -196,15 +254,69 @@ draw_heatmap(fpkm(test)[inter,], custom = TRUE)
 
 
 
-transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$Length)
-transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$Length)
-transplant_traunsteineri_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$Length)
-transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$Length)
 
-transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$Length)
-transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$Length)
-transplant_traunsteineri_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$Length)
-transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$Length)
+
+
+
+
+
+
+
+# for the GO term enrichment tests
+mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
+
+#############################################################
+#             Majalis effect of transplantation             #
+#############################################################
+
+###############################
+#            LEAF             #
+###############################
+
+transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
+draw_heatmap(transplant_majalis_kitzbuhl_leaf)
+transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+
+
+
+transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
+draw_heatmap(transplant_majalis_stulrich_leaf)
+
+
+up_test<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+down_test<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+
+up_test %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+down_test %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+
+
+###############################
+#            ROOT             #
+###############################
+
+transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
+transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
+
+#############################################################
+#         Traunsteineri effect of transplantation           #
+#############################################################
+
+###############################
+#            LEAF             #
+###############################
+
+transplant_traunsteineri_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
+transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
+
+###############################
+#            ROOT             #
+###############################
+
+transplant_traunsteineri_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
+transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
+
 
 
 get_significant_genes(transplant_majalis_kitzbuhl_leaf) %>% length()
@@ -217,5 +329,9 @@ get_significant_genes(transplant_majalis_kitzbuhl_root) %>% length()
 get_significant_genes(transplant_majalis_stulrich_root) %>% length()
 get_significant_genes(transplant_traunsteineri_kitzbuhl_root) %>% length()
 get_significant_genes(transplant_traunsteineri_stulrich_root) %>% length()
+
+
+
+
 
 
