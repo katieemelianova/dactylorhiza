@@ -15,7 +15,7 @@ run_diffexp<-function(comparison, design_term, gene_lengths){
                                 design = as.formula(formula_parsed))
   mcols(dds)$basepairs<-gene_lengths
   dds <- estimateSizeFactors(dds)
-  idx <- rowSums( counts(dds, normalized=TRUE) >= 8 ) >= 5
+  idx <- rowSums( counts(dds, normalized=TRUE) >= 5 ) >= 5
   dds <- dds[idx,]
   dds <- DESeq(dds)
   res <- results(dds)
@@ -86,19 +86,26 @@ construct_heatmap_annotation_df<-function(dds_object, value_list){
 
 # annotation_values here are heatmpa annotations, adding a coloured bar 
 # along the top indicating different groups
-draw_heatmap<-function(dds_object, annotation_values = NULL){
-  dds_fpkm<-fpkm(dds_object$dds)
-  new_column_order<-dds_fpkm %>% colnames %>% sort()
-  dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-  dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
-  dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
+draw_heatmap<-function(dds_object, annotation_values = NULL, custom=FALSE){
+  # use custom if youre just passing in an FPKM custom data frame
+  if (custom == FALSE){
+    dds_fpkm<-fpkm(dds_object$dds)
+    new_column_order<-dds_fpkm %>% colnames %>% sort()
+    dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
+    dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
+    dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
+  } else if (custom == TRUE) {
+    new_column_order<-dds_object %>% colnames %>% sort()
+    dds_object <- dds_object %>% data.frame() %>% dplyr::select(new_column_order)
+    dds_toplot<-dds_object
+  }
   if(!(is.null(annotation_values))){
     annotation_df <- construct_heatmap_annotation_df(dds_object, annotation_values)
     rownames(annotation_df) <- colnames(dds_toplot)
   } else {
     annotation_df <- NULL
   }
-  pheatmap(dds_toplot, 
+  pheatmap::pheatmap(dds_toplot, 
            scale = "row", 
            cluster_cols = FALSE,
            cluster_rows = TRUE,
@@ -108,13 +115,28 @@ draw_heatmap<-function(dds_object, annotation_values = NULL){
 }
 
 
-get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE){
-  de_genes<-results_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
-  # to make the gene names match with the names in the GO term mappings, we need to cut off the last bit (optional)
-  if (mappings_format == TRUE){
-    de_genes<-sapply(de_genes, function(x) str_split(x, ":")[[1]][1]) %>% unname()
+get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
+  if (directional == TRUE) {
+    de_genes_up<-results_object$results %>% data.frame() %>% filter(log2FoldChange > 2 & padj < 0.05) %>% rownames()
+    de_genes_down<-results_object$results %>% data.frame() %>% filter(log2FoldChange < -2 & padj < 0.05) %>% rownames()
+    if (mappings_format  == TRUE){
+      de_genes_up %<>% str_remove(":cds")
+      de_genes_down %<>% str_remove(":cds")
+    }
+    to_return_genes <- list(up=de_genes_up, down=de_genes_down)
+    return(to_return_genes)
+  } else if (directional == FALSE) {
+    de_genes<-results_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
+    to_return_genes <- de_genes
+    return(de_genes)
   }
-  return(de_genes)
+  
+  # to make the gene names match with the names in the GO term mappings, we need to cut off the last bit (optional)
+  #if (mappings_format == TRUE){
+  #  
+  #  de_genes %<>% str_remove(":cds")
+  #}
+  
 }
 
 
