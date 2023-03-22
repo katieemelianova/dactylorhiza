@@ -265,6 +265,14 @@ abline(a=0.5,b=0)
 # for the GO term enrichment tests
 mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
 
+names(mp) <- names(mp) %>% 
+  str_remove("-RA") %>%
+  str_remove("-RB") %>%
+  str_remove("-RC")
+  
+  
+
+
 #############################################################
 #             Majalis effect of transplantation             #
 #############################################################
@@ -273,31 +281,51 @@ mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotatio
 #            LEAF             #
 ###############################
 
+# diffexp
 transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
-draw_heatmap(transplant_majalis_kitzbuhl_leaf)
-transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-
-
-
 transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
+
+
+# heatmap
+draw_heatmap(transplant_majalis_kitzbuhl_leaf)
 draw_heatmap(transplant_majalis_stulrich_leaf)
 
+# go enrichment kitzbuhl
+transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_kitzbuhl_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_kitzbuhl_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
-up_test<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-down_test<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-
-up_test %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-down_test %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
-
-
+# go enrichment stulrich
+transplant_majalis_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_majalis_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 ###############################
 #            ROOT             #
 ###############################
 
+# diffexp
 transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
 transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
+
+#heatmap 
+draw_heatmap(transplant_majalis_kitzbuhl_root)
+draw_heatmap(transplant_majalis_stulrich_root)
+
+# go enrichment kitzbuhl
+transplant_majalis_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_majalis_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_kitzbuhl_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_kitzbuhl_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+# go enrichment stulrich
+transplant_majalis_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_majalis_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
 
 #############################################################
 #         Traunsteineri effect of transplantation           #
