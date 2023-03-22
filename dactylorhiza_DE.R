@@ -335,15 +335,51 @@ transplant_majalis_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.0
 #            LEAF             #
 ###############################
 
+# diffexp
 transplant_traunsteineri_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
 transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
+
+# heatmap
+draw_heatmap(transplant_traunsteineri_kitzbuhl_leaf)
+draw_heatmap(transplant_traunsteineri_stulrich_leaf)
+
+# go enrichment kitzbuhl
+transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_traunsteineri_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_kitzbuhl_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_kitzbuhl_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+# go enrichment stulrich
+transplant_traunsteineri_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
+transplant_traunsteineri_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 ###############################
 #            ROOT             #
 ###############################
 
+
+
+
 transplant_traunsteineri_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
 transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
+
+# heatmap
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
