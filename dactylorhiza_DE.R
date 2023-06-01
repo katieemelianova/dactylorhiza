@@ -91,6 +91,65 @@ df_counts_leaf<-df_leaf$counts
 df_lengths_leaf<-df_leaf$lengths
 
 
+
+
+
+
+
+
+###############################
+#       Draw PCA plots        #
+###############################
+
+# make a dds object from the total root samples (no subsetting)
+root_dds<-specify_comparison(root_samples, df_counts_root, "1 == 1")
+root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
+                                   colData = root_dds[["samples"]],
+                                   design = ~ species + locality)
+
+# make a dds object from the total leaf samples (no subsetting)
+leaf_dds<-specify_comparison(leaf_samples, df_counts_leaf, "1 == 1")
+leaf_dds <- DESeqDataSetFromMatrix(countData = leaf_dds[["counts"]],
+                                   colData = leaf_dds[["samples"]],
+                                   design = ~ species + locality)
+
+
+
+root_vst<-varianceStabilizingTransformation(root_dds)
+leaf_vst<-varianceStabilizingTransformation(leaf_dds)
+
+
+# remove outlier sample
+root_vst<-root_vst[,-30]
+plotPCA(root_vst, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
+plotPCA(root_vst, intgroup="treatment", ntop = 1000, returnData = FALSE)
+plotPCA(root_vst, intgroup=c("treatment", "species"), ntop = 1000, returnData = FALSE)
+
+plotPCA(root_vst, intgroup="locality", ntop = 1000, returnData = FALSE)
+plotPCA(root_vst, intgroup="environment", ntop = 1000, returnData = FALSE)
+
+
+plotPCA(leaf_vst, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
+plotPCA(leaf_vst, intgroup=c("treatment", "species"), ntop = 2000, returnData = FALSE)
+
+
+leaf_vst
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #############################################################
 #      Constitutively differentially expressed genes        #
 #############################################################
@@ -118,6 +177,7 @@ traunsteineri_majalis_root_T_kitzbuhl<-specify_comparison(root_samples, df_count
 traunsteineri_majalis_leaf_M_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 
+
 # getv the intersection of the two lists of DE genes
 # n.b. I need to change this to take into account direction of change
 intersect(get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl), get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl))
@@ -137,68 +197,65 @@ traunsteineri_majalis_root_T_stulrich<-specify_comparison(root_samples, df_count
 traunsteineri_majalis_leaf_M_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
 
+results(traunsteineri_majalis_root_M_stulrich$dds, contrast=c("treatment", "native", "transplant"))
+(traunsteineri_majalis_root_M_stulrich$dds)
 
-
-
+traunsteineri_majalis_root_M_stulrich$dds$
 ###########################################
 #      Plotting constitutively DEGs       #
 ###########################################
 
-pvalue_threshold <- 0.1
-logfc_threshold<-1
+pvalue_threshold <- 0.05
+#logfc_threshold<-1
 
 tmM_stu_root<-traunsteineri_majalis_root_M_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
 
 tmT_stu_root<-traunsteineri_majalis_root_T_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
-
 
 tmM_ktz_root<-traunsteineri_majalis_root_M_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
-
 tmT_ktz_root<-traunsteineri_majalis_root_T_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
 tmM_stu_leaf<-traunsteineri_majalis_leaf_M_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
 tmT_stu_leaf<-traunsteineri_majalis_leaf_T_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
 tmM_ktz_leaf<-traunsteineri_majalis_leaf_M_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
 
 tmT_ktz_leaf<-traunsteineri_majalis_leaf_T_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold & abs(log2FoldChange) > logfc_threshold) %>% 
+  filter(padj < pvalue_threshold) %>% 
   dplyr::select(log2FoldChange) %>% 
   rownames_to_column(var="gene_id")
-
-
 
 stu_root<-inner_join(tmM_stu_root, 
                      tmT_stu_root, 
@@ -225,6 +282,10 @@ all_bound<-rbind(stu_root,
       stu_leaf,
       ktz_leaf)
 
+
+all_bound %<>% mutate(status=case_when(majalis_env > 2 & traunst_env > 2 | majalis_env < -2 & traunst_env < -2 ~ "DE"))
+all_bound %<>% replace_na(list(status = "Not DE"))
+                     
 ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=comparison)) +
   geom_point() + 
   ylab("Fold change in traunsteineri environment (p < 0.05)") +
@@ -265,26 +326,54 @@ names(mp) <- names(mp) %>%
 ###############################
 
 # diffexp
-transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
-transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
-
+transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
+transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
 
 # heatmap
 draw_heatmap(transplant_majalis_kitzbuhl_leaf)
 draw_heatmap(transplant_majalis_stulrich_leaf)
+  
 
+
+plotMA(transplant_majalis_kitzbuhl_leaf$results, ylim=c(-10,10))
+plotMA(transplant_majalis_stulrich_leaf$results, ylim=c(-10,10))
+
+
+
+transplant_majalis_kitzbuhl_leaf$results %>% data.frame() %>% filter(log2FoldChange > 5 & padj < 0.05)
+
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc060018", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc069484", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc089174", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc30703", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc31917", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc41693", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc127790", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc135798", intgroup="treatment")
+plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc134292", intgroup="treatment")
+
+
+
+
+weird<-transplant_majalis_kitzbuhl_leaf$results %>% data.frame() %>% filter(abs(log2FoldChange) > 5) %>% rownames()
+
+df_counts_leaf %>% dplyr::select("mTK1") %>% rownames_to_column(var="gene_name") %>% filter(gene_name %in% weird & mTK1 > 1000)
 
 # go enrichment kitzbuhl
 transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_majalis_kitzbuhl_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_majalis_kitzbuhl_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_majalis_kitzbuhl_leaf_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_kitzbuhl_leaf_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 # go enrichment stulrich
 transplant_majalis_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_majalis_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_majalis_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_majalis_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_majalis_stulrich_leaf_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_stulrich_leaf_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+intersect(transplant_majalis_kitzbuhl_leaf_up$Term, transplant_majalis_stulrich_leaf_up$Term)
+intersect(transplant_majalis_kitzbuhl_leaf_down$Term, transplant_majalis_stulrich_leaf_down$Term)
+
 
 ###############################
 #            ROOT             #
@@ -295,7 +384,7 @@ transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_roo
 transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
 
 #heatmap 
-draw_heatmap(transplant_majalis_kitzbuhl_root, annotation_values = c("treatment"))
+draw_heatmap(transplant_majalis_kitzbuhl_root)
 draw_heatmap(transplant_majalis_stulrich_root)
 
 
@@ -314,14 +403,19 @@ transplant_majalis_kitzbuhl_root[["dds"]]$treatment
 # go enrichment kitzbuhl
 transplant_majalis_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_majalis_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_majalis_kitzbuhl_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_majalis_kitzbuhl_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_majalis_kitzbuhl_root_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_kitzbuhl_root_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 # go enrichment stulrich
 transplant_majalis_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_majalis_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_majalis_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_majalis_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_majalis_stulrich_root_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_majalis_stulrich_root_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+intersect(transplant_majalis_stulrich_root_up$Term, transplant_majalis_kitzbuhl_root_up$Term)
+intersect(transplant_majalis_stulrich_root_down$Term, transplant_majalis_kitzbuhl_root_down$Term)
+
+
 
 
 #############################################################
@@ -343,14 +437,20 @@ draw_heatmap(transplant_traunsteineri_stulrich_leaf)
 # go enrichment kitzbuhl
 transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_traunsteineri_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_traunsteineri_kitzbuhl_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_traunsteineri_kitzbuhl_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_traunsteineri_kitzbuhl_leaf_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_kitzbuhl_leaf_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 # go enrichment stulrich
 transplant_traunsteineri_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_traunsteineri_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_traunsteineri_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_traunsteineri_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_traunsteineri_stulrich_leaf_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_stulrich_leaf_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+
+intersect(transplant_traunsteineri_kitzbuhl_leaf_up$Term, transplant_traunsteineri_stulrich_leaf_up$Term)
+intersect(transplant_traunsteineri_stulrich_leaf_down$Term, transplant_traunsteineri_kitzbuhl_leaf_down$Term)
+
+
 
 ###############################
 #            ROOT             #
@@ -367,33 +467,184 @@ draw_heatmap(transplant_traunsteineri_stulrich_root)
 # go enrichment kitzbuhl
 transplant_traunsteineri_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_traunsteineri_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_traunsteineri_kitzbuhl_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_traunsteineri_kitzbuhl_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_traunsteineri_kitzbuhl_root_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_kitzbuhl_root_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
 
 # go enrichment stulrich
 transplant_traunsteineri_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
 transplant_traunsteineri_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
-transplant_traunsteineri_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
-transplant_traunsteineri_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+transplant_traunsteineri_stulrich_root_up %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, Annotated, Significant, Expected, classicFisher)
+transplant_traunsteineri_stulrich_root_down %<>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(Term, classicFisher)
+
+intersect(transplant_traunsteineri_kitzbuhl_root_up$Term, transplant_traunsteineri_stulrich_root_up$Term)
+intersect(transplant_traunsteineri_stulrich_root_down$Term, transplant_traunsteineri_kitzbuhl_root_down$Term)
+
+
 
 
 #############################################
 #         Count number of DE genes          #
 #############################################
 
-get_significant_genes(transplant_majalis_kitzbuhl_leaf) %>% length()
-get_significant_genes(transplant_majalis_stulrich_leaf) %>% length()
-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf) %>% length()
-get_significant_genes(transplant_traunsteineri_stulrich_leaf) %>% length()
+fc=5
+pv=0.005
 
-
-get_significant_genes(transplant_majalis_kitzbuhl_root) %>% length()
-get_significant_genes(transplant_majalis_stulrich_root) %>% length()
-get_significant_genes(transplant_traunsteineri_kitzbuhl_root) %>% length()
-get_significant_genes(transplant_traunsteineri_stulrich_root) %>% length()
+get_significant_genes(transplant_majalis_kitzbuhl_leaf, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_majalis_stulrich_leaf, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_traunsteineri_stulrich_leaf, fold_change=fc, pvalue=pv) %>% length()
 
 
 
 
+get_significant_genes(transplant_majalis_kitzbuhl_root, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_majalis_stulrich_root, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_traunsteineri_kitzbuhl_root, fold_change=fc, pvalue=pv) %>% length()
+get_significant_genes(transplant_traunsteineri_stulrich_root, fold_change=fc, pvalue=pv) %>% length()
 
+
+intersect(get_significant_genes(transplant_majalis_kitzbuhl_root), get_significant_genes(transplant_majalis_stulrich_root))
+intersect(get_significant_genes(transplant_traunsteineri_kitzbuhl_root), get_significant_genes(transplant_traunsteineri_stulrich_root))
+
+
+
+
+
+
+a<-get_significant_genes(transplant_majalis_kitzbuhl_leaf)
+b<-get_significant_genes(transplant_majalis_stulrich_leaf)
+c<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf)
+d<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
+
+
+
+library(RColorBrewer)
+myCol <- brewer.pal(4, "Pastel2")
+
+# Chart
+venn.diagram(
+  x = list(a, b, c, d),
+  category.names = c("mK", "mS", "tK", "tS"),
+  filename = 'venv_orchid_de_leaf',
+  output=TRUE,
+  
+  # Output features
+  imagetype="png" ,
+  height = 1080 , 
+  width = 1080 , 
+  resolution = 1000,
+  compression = "lzw",
+  
+  # Circles
+  lwd = 2,
+  lty = 'blank',
+  fill = myCol,
+  
+  # Numbers
+  cex = .4,
+  fontface = "bold",
+  fontfamily = "sans",
+  
+  # Set names
+  cat.cex = 0.3,
+  cat.fontface = "bold",
+  cat.fontfamily = "sans"
+  )
+
+
+e<-get_significant_genes(transplant_majalis_kitzbuhl_root)
+f<-get_significant_genes(transplant_majalis_stulrich_root)
+g<-get_significant_genes(transplant_traunsteineri_kitzbuhl_root)
+h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
+
+venn.diagram(
+  x = list(e, f, g, h),
+  category.names = c("mK", "mS", "tK", "tS"),
+  filename = 'venv_orchid_de_root',
+  output=TRUE,
+  
+  # Output features
+  imagetype="png" ,
+  height = 1080 , 
+  width = 1080 , 
+  resolution = 1000,
+  compression = "lzw",
+  
+  # Circles
+  lwd = 2,
+  lty = 'blank',
+  fill = myCol,
+  
+  # Numbers
+  cex = .4,
+  fontface = "bold",
+  fontfamily = "sans",
+  
+  # Set names
+  cat.cex = 0.3,
+  cat.fontface = "bold",
+  cat.fontfamily = "sans"
+)
+
+
+
+df_root$lengths
+
+
+
+##### experimenting with manual DEseq to see what the heatmap problem is, and why its so variable between reps
+
+test<-specify_comparison(root_samples, df_counts_root, 'environment == "majalis" & locality == "St Ulrich"')
+
+tes2t<-specify_comparison(root_samples, df_counts_root, '1 == 1')
+
+colSums(tes2t$counts) %>% data.frame()
+
+dds <- DESeqDataSetFromMatrix(countData = test$counts,
+                              colData = test$samples,
+                              design = ~ treatment)
+test$counts
+
+colSums(test$counts)
+keep <- rowSums(counts(dds) >= 10) >= 5
+dds <- dds[keep,]
+
+
+#mcols(dds)$basepairs<-gene_lengths
+dds <- DESeq(dds)
+res <- results(dds, contrast=c("treatment", "native", "transplant"))
+
+################
+
+
+de_genes<-dds %>% results() %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames() 
+gene_counts<-counts(dds, normalized=TRUE)
+de_gene_counts<-gene_counts[de_genes,]
+
+max_data <- max(de_gene_counts, na.rm = TRUE)
+min_data <- -min(de_gene_counts, na.rm = TRUE)
+range <- min(max_data, min_data)
+
+
+draw_heatmap2(dds)
+
+
+
+
+
+
+
+
+
+
+
+plotCounts(dds, gene=really_de_genes[1], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[2], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[3], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[4], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[5], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[6], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[7], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[8], intgroup="treatment")
+plotCounts(dds, gene=really_de_genes[9], intgroup="treatment")
 
