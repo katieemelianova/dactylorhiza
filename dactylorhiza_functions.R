@@ -138,26 +138,15 @@ draw_heatmap2 <-function(dds){
   range <- min(max_data, min_data)
   heatmap_data[is.infinite(heatmap_data)] <- NA
   heatmap_data[is.nan(heatmap_data)] <- NA
-  heatmap_data %<>% tibble() %>% drop_na() %>% data.frame()
+  heatmap_data %<>% data.frame() %>% drop_na()
   
   # plot heatmap
   pheatmap(heatmap_data,
            breaks = seq(-range, range, length.out = 100),
-           cluster_rows = TRUE, cluster_cols = FALSE,
+           cluster_rows = TRUE, cluster_cols = TRUE,
            treeheight_row = 0, treeheight_col = 0,
-           show_rownames = F, scale="row")
+           show_rownames = F, show_colnames = T, scale="row")
 }
-
-
-heatmap_data <- t(apply(dds[de_genes,], 1, function(x) x/mean(x)))
-heatmap_data <- log2(heatmap_data)
-max_data <- max(heatmap_data, na.rm = TRUE)
-min_data <- -min(heatmap_data, na.rm = TRUE)
-range <- min(max_data, min_data)
-heatmap_data[is.infinite(heatmap_data)] <- NA
-heatmap_data[is.nan(heatmap_data)] <- NA
-
-
 
 get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
   if (directional == TRUE) {
