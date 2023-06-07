@@ -95,7 +95,7 @@ draw_heatmap<-function(dds_object, annotation_values = NULL, custom=FALSE){
     dds_fpkm<-fpkm(dds_object$dds)
     new_column_order<-dds_fpkm %>% colnames %>% sort()
     dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-    dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
+    dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.0005) %>% rownames()
     dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
   } else if (custom == TRUE) {
     new_column_order<-dds_object %>% colnames %>% sort()
@@ -123,12 +123,17 @@ draw_heatmap<-function(dds_object, annotation_values = NULL, custom=FALSE){
 
 draw_heatmap2 <-function(dds){
   # get DE results
-  de_genes<-dds %>% results() %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames() 
+  de_genes<-dds %>% results() %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.0005) %>% rownames() 
   gene_counts<-counts(dds, normalized=TRUE)
   de_gene_counts<-gene_counts[de_genes,]
   
+  # make the columns alphabetical to sort conditions
+  new_column_order<-de_gene_counts %>% colnames %>% sort()
+  de_gene_counts <- de_gene_counts %>% data.frame() %>% dplyr::select(new_column_order)
+  
   # z score normalise data
-  heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/sd(x)))
+  #heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/sd(x)))
+  heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/mean(x)))
   
   # log normalise, remove NAs
   heatmap_data <- log2(heatmap_data)
@@ -143,10 +148,12 @@ draw_heatmap2 <-function(dds){
   # plot heatmap
   pheatmap(heatmap_data,
            breaks = seq(-range, range, length.out = 100),
-           cluster_rows = TRUE, cluster_cols = TRUE,
+           cluster_rows = TRUE, cluster_cols = FALSE,
            treeheight_row = 0, treeheight_col = 0,
-           show_rownames = F, show_colnames = T, scale="row")
+           show_rownames = F, show_colnames = T, scale="none")
 }
+
+
 
 get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
   if (directional == TRUE) {

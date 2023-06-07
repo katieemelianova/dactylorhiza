@@ -114,39 +114,23 @@ leaf_dds <- DESeqDataSetFromMatrix(countData = leaf_dds[["counts"]],
                                    design = ~ species + locality)
 
 
-
+# perform variance stabilizig transformation
 root_vst<-varianceStabilizingTransformation(root_dds)
 leaf_vst<-varianceStabilizingTransformation(leaf_dds)
 
 
 # remove outlier sample
 root_vst<-root_vst[,-30]
-plotPCA(root_vst, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
-plotPCA(root_vst, intgroup="treatment", ntop = 1000, returnData = FALSE)
-plotPCA(root_vst, intgroup=c("treatment", "species"), ntop = 1000, returnData = FALSE)
 
-plotPCA(root_vst, intgroup="locality", ntop = 1000, returnData = FALSE)
-plotPCA(root_vst, intgroup="environment", ntop = 1000, returnData = FALSE)
-
-
-plotPCA(leaf_vst, intgroup=c("species", "locality"), ntop = 2000, returnData = FALSE)
-plotPCA(leaf_vst, intgroup=c("treatment", "species"), ntop = 2000, returnData = FALSE)
-
-
-leaf_vst
-
-
-
-
-
-
-
-
-
-
-
-
-
+# plot the PCA 
+pcaData <-plotPCA(root_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=locality, shape=interaction(species, treatment))) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed() + 
+  theme(legend.title = element_blank()) 
 
 
 
@@ -173,9 +157,16 @@ leaf_vst
 traunsteineri_majalis_root_M_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 traunsteineri_majalis_root_T_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 
+draw_heatmap2(traunsteineri_majalis_root_M_kitzbuhl$dds)
+draw_heatmap2(traunsteineri_majalis_root_T_kitzbuhl$dds)
+
 # leaf 
 traunsteineri_majalis_leaf_M_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
+
+draw_heatmap2(traunsteineri_majalis_leaf_M_kitzbuhl$dds)
+draw_heatmap2(traunsteineri_majalis_leaf_T_kitzbuhl$dds)
+
 
 
 # getv the intersection of the two lists of DE genes
@@ -196,6 +187,16 @@ traunsteineri_majalis_root_T_stulrich<-specify_comparison(root_samples, df_count
 # leaf 
 traunsteineri_majalis_leaf_M_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
+
+
+draw_heatmap2(traunsteineri_majalis_root_M_stulrich$dds)
+draw_heatmap2(traunsteineri_majalis_root_T_stulrich$dds)
+
+draw_heatmap2(traunsteineri_majalis_leaf_M_stulrich$dds)
+draw_heatmap2(traunsteineri_majalis_leaf_T_stulrich$dds)
+
+
+
 
 results(traunsteineri_majalis_root_M_stulrich$dds, contrast=c("treatment", "native", "transplant"))
 (traunsteineri_majalis_root_M_stulrich$dds)
@@ -330,9 +331,13 @@ transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_lea
 transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
 
 # heatmap
-draw_heatmap(transplant_majalis_kitzbuhl_leaf)
-draw_heatmap(transplant_majalis_stulrich_leaf)
-  
+draw_heatmap2(transplant_majalis_kitzbuhl_leaf$dds)
+draw_heatmap2(transplant_majalis_stulrich_leaf$dds)
+
+
+#draw_heatmap(transplant_majalis_kitzbuhl_leaf)
+#draw_heatmap(transplant_majalis_stulrich_leaf)
+
 
 
 plotMA(transplant_majalis_kitzbuhl_leaf$results, ylim=c(-10,10))
@@ -384,8 +389,11 @@ transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_roo
 transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
 
 #heatmap 
-draw_heatmap(transplant_majalis_kitzbuhl_root)
-draw_heatmap(transplant_majalis_stulrich_root)
+#draw_heatmap(transplant_majalis_kitzbuhl_root)
+#draw_heatmap(transplant_majalis_stulrich_root)
+
+draw_heatmap2(transplant_majalis_kitzbuhl_leaf$dds)
+draw_heatmap2(transplant_majalis_stulrich_leaf$dds)
 
 
 dds_fpkm<-fpkm(transplant_majalis_kitzbuhl_root$dds)
@@ -433,6 +441,11 @@ transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_coun
 # heatmap
 draw_heatmap(transplant_traunsteineri_kitzbuhl_leaf)
 draw_heatmap(transplant_traunsteineri_stulrich_leaf)
+draw_heatmap2(transplant_traunsteineri_kitzbuhl_leaf$dds)
+draw_heatmap2(transplant_traunsteineri_stulrich_leaf$dds)
+
+
+read.table("~/Desktop/Diospyros/impolita_seqlengths.txt") %>% dplyr::select(V2) %>% pull() %>% summary()
 
 # go enrichment kitzbuhl
 transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
