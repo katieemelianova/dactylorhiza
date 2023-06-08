@@ -171,8 +171,8 @@ draw_heatmap2(traunsteineri_majalis_leaf_T_kitzbuhl$dds)
 
 # getv the intersection of the two lists of DE genes
 # n.b. I need to change this to take into account direction of change
-intersect(get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl), get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl))
-intersect(get_significant_genes(traunsteineri_majalis_root_M_kitzbuhl), get_significant_genes(traunsteineri_majalis_root_T_kitzbuhl))
+intersect(get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl, fold_change = 2, pvalue = 0.0005), get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl, fold_change = 2, pvalue = 0.0005))
+intersect(get_significant_genes(traunsteineri_majalis_root_M_kitzbuhl, fold_change = 2, pvalue = 0.0005), get_significant_genes(traunsteineri_majalis_root_T_kitzbuhl, fold_change = 2, pvalue = 0.0005))
 
 
 ####################
@@ -206,77 +206,73 @@ traunsteineri_majalis_root_M_stulrich$dds$
 #      Plotting constitutively DEGs       #
 ###########################################
 
-pvalue_threshold <- 0.05
-#logfc_threshold<-1
+pvalue_threshold <-  100
+logfc_threshold<-2
 
 tmM_stu_root<-traunsteineri_majalis_root_M_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  #filter(padj < pvalue_threshold) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 
 tmT_stu_root<-traunsteineri_majalis_root_T_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmM_ktz_root<-traunsteineri_majalis_root_M_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmT_ktz_root<-traunsteineri_majalis_root_T_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmM_stu_leaf<-traunsteineri_majalis_leaf_M_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmT_stu_leaf<-traunsteineri_majalis_leaf_T_stulrich$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmM_ktz_leaf<-traunsteineri_majalis_leaf_M_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
 tmT_ktz_leaf<-traunsteineri_majalis_leaf_T_kitzbuhl$results %>% 
   data.frame() %>% 
-  filter(padj < pvalue_threshold) %>% 
-  dplyr::select(log2FoldChange) %>% 
+  #filter(padj < pvalue_threshold) %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
+
+colname_string<-c("gene_id", "majalis_env", "majalis_env_padj", "traunst_env", "traunst_env_padj", "comparison")
 
 stu_root<-inner_join(tmM_stu_root, 
                      tmT_stu_root, 
                      by="gene_id") %>% mutate(comparison="St. Ulrich root") %>%
-  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+  set_colnames(colname_string)
 
 ktz_root<-inner_join(tmM_ktz_root, 
                      tmT_ktz_root, 
                      by="gene_id") %>% mutate(comparison="Kitzbuhl root") %>%
-  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+  set_colnames(colname_string)
 
 stu_leaf<-inner_join(tmM_stu_leaf, 
                      tmT_stu_leaf, 
                      by="gene_id") %>% mutate(comparison="St. Ulrich leaf") %>%
-  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+  set_colnames(colname_string)
 
 ktz_leaf<-inner_join(tmM_ktz_leaf, 
                      tmT_ktz_leaf, 
                      by="gene_id") %>% mutate(comparison="Kitzbuhl leaf") %>%
-  set_colnames(c("gene_id", "majalis_env", "traunst_env", "comparison"))
+  set_colnames(colname_string)
 
 all_bound<-rbind(stu_root,
       ktz_root,
@@ -284,13 +280,30 @@ all_bound<-rbind(stu_root,
       ktz_leaf)
 
 
-all_bound %<>% mutate(status=case_when(majalis_env > 2 & traunst_env > 2 | majalis_env < -2 & traunst_env < -2 ~ "DE"))
-all_bound %<>% replace_na(list(status = "Not DE"))
-                     
-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=comparison)) +
-  geom_point() + 
-  ylab("Fold change in traunsteineri environment (p < 0.05)") +
-  xlab("Fold change in majalis environment (p < 0.05)")
+all_bound %<>% mutate(status=case_when(majalis_env > 2 & 
+                                         traunst_env > 2 &
+                                         majalis_env_padj < 0.05 &
+                                         traunst_env_padj < 0.05 ~ "D. traunsteineri > D. majalis",
+                                       majalis_env < -2 & 
+                                         traunst_env < -2 &
+                                         majalis_env_padj < 0.05 &
+                                         traunst_env_padj < 0.05 ~ "D. majalis > D. traunsteineri"))
+
+
+# designate all unlabelled status values Not Significant         
+all_bound %<>% replace_na(list(status = "Not significant"))
+
+# arrange the data so that the DE points are plotted last and on top of the grey non significant points
+all_bound %<>% arrange(desc(status))
+
+
+ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
+  geom_point(alpha=0.5) + 
+  ylab("Fold change in traunsteineri environment") +
+  xlab("Fold change in majalis environment") +
+  scale_color_manual(values = c("D. majalis > D. traunsteineri" = "black", 
+                                "D. traunsteineri > D. majalis" = "red",
+                                "Not significant" = "grey"))
 
 
 
@@ -326,43 +339,54 @@ names(mp) <- names(mp) %>%
 #            LEAF             #
 ###############################
 
-# diffexp
+######################################
+#        differential expression     #
+######################################
+
 transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
 transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
 
-# heatmap
+#######################
+#        heatmaps     #
+#######################
+
 draw_heatmap2(transplant_majalis_kitzbuhl_leaf$dds)
 draw_heatmap2(transplant_majalis_stulrich_leaf$dds)
 
+######################################
+#             volcano plots          #
+######################################
 
-#draw_heatmap(transplant_majalis_kitzbuhl_leaf)
-#draw_heatmap(transplant_majalis_stulrich_leaf)
+transplant_majalis_kitzbuhl_leaf_volcano <- transplant_majalis_kitzbuhl_leaf$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  ggtitle("transplant stulrich kitzbuhl leaf") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+transplant_majalis_stulrich_leaf_volcano <- transplant_majalis_stulrich_leaf$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  ggtitle("transplant stulrich st ulrich leaf") +
+  theme(plot.title = element_text(hjust = 0.5))
 
 
-
-plotMA(transplant_majalis_kitzbuhl_leaf$results, ylim=c(-10,10))
-plotMA(transplant_majalis_stulrich_leaf$results, ylim=c(-10,10))
-
-
-
-transplant_majalis_kitzbuhl_leaf$results %>% data.frame() %>% filter(log2FoldChange > 5 & padj < 0.05)
-
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc060018", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc069484", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc089174", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc30703", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc31917", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc41693", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc127790", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc135798", intgroup="treatment")
-plotCounts(transplant_majalis_kitzbuhl_leaf$dds, gene="Dinc134292", intgroup="treatment")
-
-
-
-
-weird<-transplant_majalis_kitzbuhl_leaf$results %>% data.frame() %>% filter(abs(log2FoldChange) > 5) %>% rownames()
-
-df_counts_leaf %>% dplyr::select("mTK1") %>% rownames_to_column(var="gene_name") %>% filter(gene_name %in% weird & mTK1 > 1000)
+######################################
+#            GO enrichment           #
+######################################
 
 # go enrichment kitzbuhl
 transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
@@ -380,33 +404,54 @@ intersect(transplant_majalis_kitzbuhl_leaf_up$Term, transplant_majalis_stulrich_
 intersect(transplant_majalis_kitzbuhl_leaf_down$Term, transplant_majalis_stulrich_leaf_down$Term)
 
 
+
 ###############################
 #            ROOT             #
 ###############################
 
-# diffexp
+######################################
+#      differential expression       #
+######################################
 transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
 transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
 
-#heatmap 
-#draw_heatmap(transplant_majalis_kitzbuhl_root)
-#draw_heatmap(transplant_majalis_stulrich_root)
-
-draw_heatmap2(transplant_majalis_kitzbuhl_leaf$dds)
-draw_heatmap2(transplant_majalis_stulrich_leaf$dds)
-
-
-dds_fpkm<-fpkm(transplant_majalis_kitzbuhl_root$dds)
-new_column_order<-dds_fpkm %>% colnames %>% sort()
-dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-dds_significant<-transplant_majalis_kitzbuhl_root$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.05) %>% rownames()
-dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
+#################################
+#            heatmaps           #
+#################################
+draw_heatmap2(transplant_majalis_kitzbuhl_root$dds)
+draw_heatmap2(transplant_majalis_stulrich_root$dds)
 
 
+######################################
+#             volcano plots          #
+######################################
 
-sapply(c("treatment"), function(x) transplant_majalis_kitzbuhl_root[["dds"]][[x]]) %>% data.frame()
+transplant_majalis_kitzbuhl_root_volcano <- transplant_majalis_kitzbuhl_root$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  ggtitle("transplant stulrich kitzbuhl root") +
+  theme(plot.title = element_text(hjust = 0.5))
 
-transplant_majalis_kitzbuhl_root[["dds"]]$treatment
+transplant_majalis_stulrich_root_volcano <- transplant_majalis_stulrich_root$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  ggtitle("transplant stulrich st ulrich root") +
+  theme(plot.title = element_text(hjust = 0.5))
+
 
 # go enrichment kitzbuhl
 transplant_majalis_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
