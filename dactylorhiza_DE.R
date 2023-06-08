@@ -367,8 +367,10 @@ transplant_majalis_kitzbuhl_leaf_volcano <- transplant_majalis_kitzbuhl_leaf$res
   geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
   scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
-  ggtitle("transplant stulrich kitzbuhl leaf") +
-  theme(plot.title = element_text(hjust = 0.5))
+  #ggtitle("transplant stulrich kitzbuhl leaf") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
 
 transplant_majalis_stulrich_leaf_volcano <- transplant_majalis_stulrich_leaf$results %>% 
   data.frame() %>% 
@@ -380,8 +382,10 @@ transplant_majalis_stulrich_leaf_volcano <- transplant_majalis_stulrich_leaf$res
   geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
   scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
-  ggtitle("transplant stulrich st ulrich leaf") +
-  theme(plot.title = element_text(hjust = 0.5))
+  #ggtitle("transplant stulrich st ulrich leaf") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
 
 
 ######################################
@@ -436,8 +440,10 @@ transplant_majalis_kitzbuhl_root_volcano <- transplant_majalis_kitzbuhl_root$res
   geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
   scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
-  ggtitle("transplant stulrich kitzbuhl root") +
-  theme(plot.title = element_text(hjust = 0.5))
+  #ggtitle("transplant stulrich kitzbuhl root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
 
 transplant_majalis_stulrich_root_volcano <- transplant_majalis_stulrich_root$results %>% 
   data.frame() %>% 
@@ -449,8 +455,20 @@ transplant_majalis_stulrich_root_volcano <- transplant_majalis_stulrich_root$res
   geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
   geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
   scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
-  ggtitle("transplant stulrich st ulrich root") +
-  theme(plot.title = element_text(hjust = 0.5))
+  #ggtitle("transplant stulrich st ulrich root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
+
+
+cowplot::plot_grid(transplant_majalis_kitzbuhl_leaf_volcano,
+                   transplant_majalis_stulrich_leaf_volcano,
+                   transplant_majalis_kitzbuhl_root_volcano,
+                   transplant_majalis_stulrich_root_volcano,
+                   labels = c('A', 
+                              'B', 
+                              "C", 
+                              "D"))
 
 
 # go enrichment kitzbuhl
@@ -484,13 +502,49 @@ transplant_traunsteineri_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_coun
 transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
 
 # heatmap
-draw_heatmap(transplant_traunsteineri_kitzbuhl_leaf)
-draw_heatmap(transplant_traunsteineri_stulrich_leaf)
+
 draw_heatmap2(transplant_traunsteineri_kitzbuhl_leaf$dds)
 draw_heatmap2(transplant_traunsteineri_stulrich_leaf$dds)
 
 
-read.table("~/Desktop/Diospyros/impolita_seqlengths.txt") %>% dplyr::select(V2) %>% pull() %>% summary()
+######################################
+#             volcano plots          #
+######################################
+
+transplant_traunsteineri_kitzbuhl_leaf_volcano <- transplant_traunsteineri_kitzbuhl_leaf$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  #ggtitle("transplant stulrich kitzbuhl root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
+
+transplant_traunsteineri_stulrich_leaf_volcano <- transplant_traunsteineri_stulrich_leaf$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  #ggtitle("transplant stulrich st ulrich root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
+
+
+
+
+
 
 # go enrichment kitzbuhl
 transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
@@ -521,6 +575,58 @@ transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_coun
 # heatmap
 draw_heatmap(transplant_traunsteineri_kitzbuhl_root)
 draw_heatmap(transplant_traunsteineri_stulrich_root)
+
+
+######################################
+#             volcano plots          #
+######################################
+
+transplant_traunsteineri_kitzbuhl_root_volcano <- transplant_traunsteineri_kitzbuhl_root$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  #ggtitle("transplant stulrich kitzbuhl root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
+
+transplant_traunsteineri_stulrich_root_volcano <- transplant_traunsteineri_stulrich_root$results %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = diffexpressed)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.05), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "grey", "#bb0c00")) +
+  #ggtitle("transplant stulrich st ulrich root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
+
+
+
+transplant_traunsteineri_kitzbuhl_leaf_volcano
+transplant_traunsteineri_stulrich_leaf_volcano
+transplant_traunsteineri_kitzbuhl_root_volcano
+transplant_traunsteineri_stulrich_root_volcano
+
+
+cowplot::plot_grid(transplant_traunsteineri_kitzbuhl_leaf_volcano,
+                   transplant_traunsteineri_stulrich_leaf_volcano,
+                   transplant_traunsteineri_kitzbuhl_root_volcano,
+                   transplant_traunsteineri_stulrich_root_volcano,
+                   labels = c('A', 
+                              'B', 
+                              "C", 
+                              "D"))
 
 # go enrichment kitzbuhl
 transplant_traunsteineri_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
