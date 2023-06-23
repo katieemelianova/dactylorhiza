@@ -8,6 +8,7 @@ library(topGO)
 library(pheatmap)
 library(VennDiagram)
 library(grDevices)
+library(Pigengene)
 source("dactylorhiza_functions.R")
 
 
@@ -159,16 +160,10 @@ theme(text = element_text(size = 20),
 traunsteineri_majalis_root_M_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 traunsteineri_majalis_root_T_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 
-draw_heatmap2(traunsteineri_majalis_root_M_kitzbuhl$dds)
-draw_heatmap2(traunsteineri_majalis_root_T_kitzbuhl$dds)
 
 # leaf 
 traunsteineri_majalis_leaf_M_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
-
-draw_heatmap2(traunsteineri_majalis_leaf_M_kitzbuhl$dds)
-draw_heatmap2(traunsteineri_majalis_leaf_T_kitzbuhl$dds)
-
 
 ####################
 #    ST ULRICH     #
@@ -182,17 +177,9 @@ traunsteineri_majalis_root_T_stulrich<-specify_comparison(root_samples, df_count
 traunsteineri_majalis_leaf_M_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "St Ulrich"') %>% run_diffexp("species", df_lengths_leaf)
 
-
-draw_heatmap2(traunsteineri_majalis_root_M_stulrich$dds)
-draw_heatmap2(traunsteineri_majalis_root_T_stulrich$dds)
-
-draw_heatmap2(traunsteineri_majalis_leaf_M_stulrich$dds)
-draw_heatmap2(traunsteineri_majalis_leaf_T_stulrich$dds)
-
-
-###########################################
-#      Plotting constitutively DEGs       #
-###########################################
+##############################################
+#    Figure 2 Plotting constitutively DEGs   #
+##############################################
 
 pvalue_threshold <-  100
 logfc_threshold<-2
@@ -281,8 +268,8 @@ all_bound %<>% replace_na(list(status = "Not significant"))
 # arrange the data so that the DE points are plotted last and on top of the grey non significant points
 all_bound %<>% arrange(desc(status))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 1300, height = 1000)
-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1300, height = 1000)
+ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status, shape = comparison)) +
   geom_point(alpha=0.5, size = 7) + 
   ylab("Fold change in traunsteineri environment") +
   xlab("Fold change in majalis environment") +
@@ -307,10 +294,9 @@ gene_ids_constitutive_majalis_up<-all_bound %>% filter(status == "D. majalis > D
 
 
 
-###############################
-#           Table 1           #
-###############################
-
+#############################################
+#    Table 1 Constitutively DEG GO terms    #
+#############################################
 
 constitutive_annotation<-data.frame(Term=c(),
                                     Ontology=c(),
@@ -356,38 +342,14 @@ constitutive_annotation %>% filter(!(Ontology == "CC")) %>% arrange(expression_p
 ###############################
 #            LEAF             #
 ###############################
-
-######################################
-#        differential expression     #
-######################################
-
 transplant_majalis_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
 transplant_majalis_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths, cpm_threshold=1, min_count_per_sample=5)
-
-#######################
-#        heatmaps     #
-#######################
-
-draw_heatmap2(transplant_majalis_kitzbuhl_leaf$dds)
-draw_heatmap2(transplant_majalis_stulrich_leaf$dds)
-
 
 ###############################
 #            ROOT             #
 ###############################
-
-######################################
-#      differential expression       #
-######################################
 transplant_majalis_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
 transplant_majalis_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "majalis" & locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
-
-#################################
-#            heatmaps           #
-#################################
-draw_heatmap2(transplant_majalis_kitzbuhl_root$dds)
-draw_heatmap2(transplant_majalis_stulrich_root$dds)
-
 
 
 #############################################################
@@ -397,41 +359,14 @@ draw_heatmap2(transplant_majalis_stulrich_root$dds)
 ###############################
 #            LEAF             #
 ###############################
-
-######################################
-#        differential expression     #
-######################################
-
 transplant_traunsteineri_kitzbuhl_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_leaf$lengths)
 transplant_traunsteineri_stulrich_leaf<-specify_comparison(leaf_samples, df_counts_leaf, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_leaf$lengths)
-
-#######################
-#      heatmaps       #
-#######################
-
-draw_heatmap2(transplant_traunsteineri_kitzbuhl_leaf$dds)
-draw_heatmap2(transplant_traunsteineri_stulrich_leaf$dds)
-
 
 ###############################
 #            ROOT             #
 ###############################
-
-######################################
-#        differential expression     #
-######################################
 transplant_traunsteineri_kitzbuhl_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("treatment", df_root$lengths)
 transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_counts_root, 'species == "traunsteineri"& locality == "St Ulrich"') %>% run_diffexp("treatment", df_root$lengths)
-
-#######################
-#      heatmaps       #
-#######################
-draw_heatmap(transplant_traunsteineri_kitzbuhl_root)
-draw_heatmap(transplant_traunsteineri_stulrich_root)
-
-
-
-
 
 
 ######################################################
@@ -452,7 +387,7 @@ myCol <- brewer.pal(4, "Pastel2")
 venn.diagram(
   x = list(a, b, c, d),
   category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure3a.png',
+  filename = 'Figure4a.png',
   output=TRUE,
   
   # Output features
@@ -487,7 +422,7 @@ h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
 venn.diagram(
   x = list(e, f, g, h),
   category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure3b.png',
+  filename = 'Figure4b.png',
   output=TRUE,
   
   # Output features
@@ -572,7 +507,7 @@ de_counts$downregulated <- (-de_counts$downregulated)
 
 colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of DE")
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", width = 1000, height = 1000)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 1000, height = 1000)
 ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) + 
   geom_bar(stat="identity", position="identity") +
   facet_wrap(~ Tissue + Locality, scales = "free") +
@@ -716,7 +651,7 @@ colnames(leaf_go_bound) <-c("Term", "GO.ID", "Significant", "Annotated", "classi
 colnames(root_go_bound) <-c("Term", "GO.ID", "Significant", "Annotated", "classicFisher", "Rich factor", "comparison", "Direction")
 
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=1800)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=2000, width=1800)
 ggplot(leaf_go_bound, aes(x=comparison, y=Term, color = Direction, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free") + 
   theme(text = element_text(size = 30), 
@@ -735,7 +670,7 @@ dev.off()
 # this alphabetically rearranges the orderr so locking in order of localitoies this way
 root_go_bound$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", height=2000, width=1800)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure7.png", height=2000, width=1800)
 ggplot(root_go_bound, aes(x=comparison, y=Term, color = Direction, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free") + 
   theme(text = element_text(size = 30), 
@@ -754,6 +689,174 @@ dev.off()
 
 
 
+########################################################
+#      plot heatmaps of reciprocally plastic genes     #
+########################################################
+
+st_ulrich_root_effect_of_environment<-specify_comparison(root_samples, df_counts_root, 'locality == "St Ulrich"') %>% run_diffexp("environment", df_root$lengths)
+kitzbuhl_root_effect_of_environment<-specify_comparison(root_samples, df_counts_root, 'locality == "Kitzbuhl"') %>% run_diffexp("environment", df_root$lengths)
+st_ulrich_leaf_effect_of_environment<-specify_comparison(leaf_samples, df_counts_leaf, 'locality == "St Ulrich"') %>% run_diffexp("environment", df_leaf$lengths)
+kitzbuhl_leaf_effect_of_environment<-specify_comparison(leaf_samples, df_counts_leaf, 'locality == "Kitzbuhl"') %>% run_diffexp("environment", df_leaf$lengths)
+
+normalise_data_for_heatmap<-function(dds){
+  de_genes<-dds %>% results() %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.0005) %>% rownames() 
+  gene_counts<-counts(dds, normalized=TRUE)
+  de_gene_counts<-gene_counts[de_genes,]
+  new_column_order<-de_gene_counts %>% colnames %>% sort()
+  de_gene_counts <- de_gene_counts %>% data.frame() %>% dplyr::select(new_column_order)
+  heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/mean(x)))
+  #heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/sd(x)))
+  # log normalise, remove NAs
+  heatmap_data <- log2(heatmap_data)
+  # get data range for breaks
+  max_data <- max(heatmap_data, na.rm = TRUE)
+  min_data <- -min(heatmap_data, na.rm = TRUE)
+  range <- min(max_data, min_data)
+  heatmap_data[is.infinite(heatmap_data)] <- NA
+  heatmap_data[is.nan(heatmap_data)] <- NA
+  heatmap_data %<>% data.frame() %>% drop_na()
+  return(heatmap_data)
+}
+
+st_ulrich_root_effect_of_environment_heatmap<-normalise_data_for_heatmap(st_ulrich_root_effect_of_environment$dds)
+kitzbuhl_root_effect_of_environment_heatmap<-normalise_data_for_heatmap(kitzbuhl_root_effect_of_environment$dds)
+st_ulrich_leaf_effect_of_environment_heatmap<-normalise_data_for_heatmap(st_ulrich_leaf_effect_of_environment$dds)
+kitzbuhl_leaf_effect_of_environment_heatmap<-normalise_data_for_heatmap(kitzbuhl_leaf_effect_of_environment$dds)
+
+
+
+# theres an "r" on the end of the root samples so need to remove these to be able to rbind by column with leaf
+colnames(st_ulrich_root_effect_of_environment_heatmap) %<>% str_remove("r")
+colnames(kitzbuhl_root_effect_of_environment_heatmap) %<>% str_remove("r")
+
+
+# creatig the grouping to enable me to make the annotation DF for the grouped heatmap
+st_ulrich_leaf_effect_of_environment_heatmap %<>% mutate(grouping="Leaf")
+st_ulrich_root_effect_of_environment_heatmap %<>% mutate(grouping="Root")
+kitzbuhl_leaf_effect_of_environment_heatmap %<>% mutate(grouping="Leaf")
+kitzbuhl_root_effect_of_environment_heatmap %<>% mutate(grouping="Root")
+
+# make stUlrich annotation
+st_ulrich_annotation<-data.frame(c(st_ulrich_leaf_effect_of_environment_heatmap$grouping, 
+                                   st_ulrich_root_effect_of_environment_heatmap$grouping))
+
+colnames(st_ulrich_annotation) <-"Tissue"
+# use make.names to rename duplicate genes and not break data.frame function
+rownames(st_ulrich_annotation) <- 
+  make.names(c(rownames(st_ulrich_leaf_effect_of_environment_heatmap),
+               rownames(st_ulrich_root_effect_of_environment_heatmap)), 
+             unique = TRUE)
+
+
+# make Kitzbuhl annotation
+kitzbuhl_annotation<-data.frame(c(kitzbuhl_leaf_effect_of_environment_heatmap$grouping, 
+                                   kitzbuhl_root_effect_of_environment_heatmap$grouping))
+
+colnames(kitzbuhl_annotation) <-"Tissue"
+# use make.names to rename duplicate genes and not break data.frame function
+rownames(kitzbuhl_annotation) <- 
+  make.names(c(rownames(kitzbuhl_leaf_effect_of_environment_heatmap), 
+               rownames(kitzbuhl_root_effect_of_environment_heatmap)), 
+             unique = TRUE)
+
+# remove the grouping column you made to get the annotation dataframe
+st_ulrich_leaf_effect_of_environment_heatmap %<>% dplyr::select(-grouping) %>% set_rownames(st_ulrich_annotation %>% filter(Tissue == "Leaf") %>% rownames())
+st_ulrich_root_effect_of_environment_heatmap %<>% dplyr::select(-grouping) %>% set_rownames(st_ulrich_annotation %>% filter(Tissue == "Root") %>% rownames())
+kitzbuhl_leaf_effect_of_environment_heatmap  %<>% dplyr::select(-grouping) %>% set_rownames(kitzbuhl_annotation %>% filter(Tissue == "Leaf") %>% rownames())
+kitzbuhl_root_effect_of_environment_heatmap  %<>% dplyr::select(-grouping) %>% set_rownames(kitzbuhl_annotation %>% filter(Tissue == "Root") %>% rownames())
+
+
+st_ulrich_effect_of_environment_heatmap<-rbind(st_ulrich_leaf_effect_of_environment_heatmap, st_ulrich_root_effect_of_environment_heatmap)
+kitzbuhl_effect_of_environment_heatmap<-rbind(kitzbuhl_leaf_effect_of_environment_heatmap, kitzbuhl_root_effect_of_environment_heatmap)
+
+stulrich_annotation_col = data.frame(Species = c(rep("D. majalis", 8), rep("D. traunsteineri", 8)), Environment=c(rep("M", 4), rep("T", 4), rep("M", 4), rep("T", 4)))
+kitzbuhl_annotation_col = data.frame(Species = c(rep("D. majalis", 10), rep("D. traunsteineri", 10)), Environment=c(rep("M", 5), rep("T", 5), rep("M", 5), rep("T", 5)))
+                                                       
+ 
+rownames(stulrich_annotation_col)<-st_ulrich_effect_of_environment_heatmap %>% colnames()  
+rownames(kitzbuhl_annotation_col)<-kitzbuhl_effect_of_environment_heatmap %>% colnames()  
+
+# define colours of annotation to be used
+ann_colors = list(Environment = c(M="deepskyblue", T="goldenrod1"),
+                  Species = c(`D. majalis`="lightpink", `D. traunsteineri`="lightgreen"))
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure8.png", height=2000, width=2300)
+pheatmap.type(Data=st_ulrich_effect_of_environment_heatmap, 
+              annRow=st_ulrich_annotation, 
+              show_rownames=FALSE,
+              cluster_cols=FALSE,
+              treeheight_row = 0, treeheight_col = 0,
+              show_colnames = F, scale="none",
+              border_color = NA,
+              annotation_col=stulrich_annotation_col,
+              annotation_colors=ann_colors,
+              annotation_names_row=F,
+              annotation_names_col=F,
+              fontsize = 45,
+              legend=FALSE,
+              gaps_row=c(19),
+              gaps_col=c(4,8,12))
+dev.off()
+
+st_ulrich_annotation %>% filter(Tissue == "Leaf") %>% nrow()
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure9.png", height=2000, width=2300)
+pheatmap.type(Data=kitzbuhl_effect_of_environment_heatmap, 
+              annRow=kitzbuhl_annotation, 
+              show_rownames=FALSE,
+              cluster_cols=FALSE,
+              treeheight_row = 0, treeheight_col = 0,
+              show_colnames = F, scale="none",
+              border_color = NA,
+              annotation_col=kitzbuhl_annotation_col,
+              annotation_colors=ann_colors,
+              annotation_names_row=F,
+              annotation_names_col=F,
+              fontsize = 45,
+              legend=FALSE,
+              gaps_row=c(6),
+              gaps_col=c(5,10,15))
+dev.off()
+
+
+
+
+
+
+
+
+
+stu_root<-st_ulrich_root_effect_of_environment$results %>% 
+  data.frame() %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
+  rownames_to_column(var="gene_id") %>%
+  mutate("locality" = "stulrich")
+
+kitz_root<-kitzbuhl_root_effect_of_environment$results %>% 
+  data.frame() %>% 
+  dplyr::select(log2FoldChange, padj) %>% 
+  rownames_to_column(var="gene_id") %>%
+  mutate("locality" = "kitzzbul")
+
+all_env<-rbind(stu_root, kitz_root)
+
+
+
+
+all_env_volcano <- all_env %>% 
+  data.frame() %>% 
+  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.0005 ~ "upregulated",
+                                 log2FoldChange <= -2 & padj <= 0.0005 ~ "downregulated")) %>% 
+  replace_na(list(diffexpressed = "Not significant")) %>%
+  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = interaction(locality, diffexpressed))) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.0005), col = "gray", linetype = 'dashed') +
+  scale_color_manual(values = c("#00AFBB", "red", "grey", "grey", "yellow", "pink")) +
+  #ggtitle("transplant stulrich kitzbuhl root") +
+  #theme(plot.title = element_text(hjust = 0.5)) + 
+  xlim(-5, 5) + 
+  ylim(0, 15)
 
 
 
@@ -766,6 +869,172 @@ dev.off()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### comapre metal ion trauns up constitutive with majalis up metal plstic up
+
+
+# define GO terms which we want to pull out
+# traunsteineri constitutively upregualted related to metal ion binding
+metal_genes_trans_constitut_up<-c("")
+
+
+
+
+####################################################################################
+#     get the genes in the GO term that topGO assigned in majalis St Ulrich upreg  #
+####################################################################################
+
+mS_up<-get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$up
+geneID2GO<-mp
+geneSel<-mS_up
+geneSel<-factor(as.integer(names(geneID2GO) %in% geneSel))
+names(geneSel)<-names(geneID2GO)
+
+# set up the topGO object with upregulated majalis root genes
+sampleGOdata <- new("topGOdata",
+                    ontology = "BP",
+                    allGenes = geneSel, 
+                    nodeSize = 10,
+                    annot = annFUN.gene2GO,
+                    gene2GO = geneID2GO)
+
+# get the Dinc genes in term
+allGO = genesInTerm(sampleGOdata)
+
+# now get the constitutive traunsteineri UP gene annotations and try and see if there is any overlap
+traunst_const_up<-constitutive_annotation %>% 
+  filter(!(Ontology == "CC") & 
+           expression_pattern == "T > M") %>% arrange(expression_pattern, Ontology) %>% 
+  dplyr:: select(gene_id) %>% pull()
+
+tfg<-c()
+for (i in names(allGO[transplant_majalis_stulrich_root_up$GO.ID])){
+  my_intersect<-(intersect(allGO[transplant_majalis_stulrich_root_up$GO.ID][[i]], traunst_const_up))
+  if (!is_empty(my_intersect)){
+    print(i)
+    print(my_intersect)
+    tfg<-c(tfg, my_intersect)
+  }
+}
+
+tfg %>% unique()
+
+tes2t<-specify_comparison(root_samples, df_counts_root, '1 == 1')
+dds <- DESeqDataSetFromMatrix(countData = tes2t$counts,
+                              colData = tes2t$samples,
+                              design = ~ treatment)
+dds<-DESeq(dds)
+dds_counts<-counts(dds, normalized=TRUE)
+  
+#interesting<-dds_counts[tfg %>% unique(),]
+interesting<-dds_counts[mS_up %>% unique(),]
+
+
+intersect(tfg %>% unique(), mS_up %>% unique())
+
+heatmap_data <- t(apply(interesting, 1, function(x) x/mean(x)))
+
+# log normalise, remove NAs
+heatmap_data <- log2(heatmap_data)
+# get data range for breaks
+max_data <- max(heatmap_data, na.rm = TRUE)
+min_data <- -min(heatmap_data, na.rm = TRUE)
+range <- min(max_data, min_data)
+heatmap_data[is.infinite(heatmap_data)] <- NA
+heatmap_data[is.nan(heatmap_data)] <- NA
+heatmap_data %<>% data.frame() %>% drop_na()
+
+new_column_order<-heatmap_data %>% colnames %>% sort()
+heatmap_data <- heatmap_data %>% data.frame() %>% dplyr::select(new_column_order)
+
+annotation_col<-data.frame(c(rep("majalis native kitzbuhl", 5),
+             rep("majalis native st ulrich", 4),
+             rep("majalis transplant kitzbuhl", 5),
+             rep("majalis transplant st ulrich", 4),
+             rep("traunsteineri transplant kitzbuhl", 5),
+             rep("traunsteineri transplant st ulrich", 4),
+             rep("traunsteineri native kitzbuhl", 5),
+             rep("traunsteineri native st ulrich", 4)), row.names=colnames(heatmap_data)
+             )
+
+
+colnames(annotation_col)<-"treatment"
+
+
+# plot heatmap
+pheatmap(heatmap_data,
+         breaks = seq(-range, range, length.out = 100),
+         cluster_rows = TRUE, cluster_cols = FALSE,
+         treeheight_row = 0, treeheight_col = 0,
+         show_rownames = F, show_colnames = T, scale="none",
+         annotation_col = annotation_col)
+
+
+
+###### repeat above code for majalis up traunst up
+
+mS_up<-get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$up
+geneID2GO<-mp
+geneSel<-mS_up
+geneSel<-factor(as.integer(names(geneID2GO) %in% geneSel))
+names(geneSel)<-names(geneID2GO)
+
+# set up the topGO object with upregulated majalis root genes
+sampleGOdata <- new("topGOdata",
+                    ontology = "BP",
+                    allGenes = geneSel, 
+                    nodeSize = 10,
+                    annot = annFUN.gene2GO,
+                    gene2GO = geneID2GO)
+
+# get the Dinc genes in term
+allGO = genesInTerm(sampleGOdata)
+
+# also can get the majalis constitutiveky up
+majalis_const_up<-constitutive_annotation %>% 
+  filter(!(Ontology == "CC") & 
+           expression_pattern == "M > T") %>% arrange(expression_pattern, Ontology) %>% 
+  dplyr:: select(gene_id) %>% pull()
+
+
+
+
+
+transplant_majalis_kitzbuhl_leaf_up
+transplant_majalis_kitzbuhl_leaf_down
+transplant_majalis_stulrich_leaf_up
+transplant_majalis_stulrich_leaf_down
+transplant_majalis_kitzbuhl_root_up
+transplant_majalis_kitzbuhl_root_down
+transplant_majalis_stulrich_root_up
+transplant_majalis_stulrich_root_down
+transplant_traunsteineri_kitzbuhl_leaf_up
+transplant_traunsteineri_kitzbuhl_leaf_down
+transplant_traunsteineri_stulrich_leaf_up
+transplant_traunsteineri_stulrich_leaf_down
+transplant_traunsteineri_kitzbuhl_root_up
+transplant_traunsteineri_kitzbuhl_root_down
+transplant_traunsteineri_stulrich_root_up
+transplant_traunsteineri_stulrich_root_down
 
 
 
@@ -784,8 +1053,8 @@ tes2t<-specify_comparison(root_samples, df_counts_root, '1 == 1')
 
 colSums(tes2t$counts) %>% data.frame()
 
-dds <- DESeqDataSetFromMatrix(countData = test$counts,
-                              colData = test$samples,
+dds <- DESeqDataSetFromMatrix(countData = tes2t$counts,
+                              colData = tes2t$samples,
                               design = ~ treatment)
 test$counts
 
