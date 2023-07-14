@@ -9,8 +9,23 @@ library(pheatmap)
 library(VennDiagram)
 library(grDevices)
 library(Pigengene)
+library(GO.db)
+library(reshape2)
+library(egg)
 source("dactylorhiza_functions.R")
 
+
+#############################################################################
+#        load in the GO ID mappings to transcripts for use later on         #
+#############################################################################
+
+# for the GO term enrichment tests
+mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
+
+names(mp) <- names(mp) %>% 
+  str_remove("-RA") %>%
+  str_remove("-RB") %>%
+  str_remove("-RC")
 
 #############################################################################
 #       make a function fo annotating samples sing naming convention        #
@@ -26,7 +41,7 @@ annotate_samples<-function(sample_tibble){
   sample_tibble %<>% column_to_rownames("sample_id")
   return(sample_tibble)
 }
-
+ 
 
 ##################################################################################################
 #      make a function to read in featurecounts and remove unecessary strings in colnames        #
@@ -133,11 +148,7 @@ dev.off()
 
 
 
-theme(text = element_text(size = 20), 
-      legend.text=element_text(size=20),
-      axis.text=element_text(size=24),
-      axis.title=element_text(size=28),
-      legend.title=element_blank())
+
 
 #############################################################
 #      Constitutively differentially expressed genes        #
@@ -297,6 +308,8 @@ gene_ids_constitutive_majalis_up<-all_bound %>% filter(status == "D. majalis > D
 #############################################
 #    Table 1 Constitutively DEG GO terms    #
 #############################################
+
+godb_table<-toTable(GOTERM)
 
 constitutive_annotation<-data.frame(Term=c(),
                                     Ontology=c(),
@@ -502,29 +515,29 @@ de_counts<-data.frame(species=species,
            upregulated=upregulated,
            downregulated=downregulated)
 
+
 # make the downregulated values negative for mirrorred barplot
 de_counts$downregulated <- (-de_counts$downregulated)
 
-colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of DE")
+de_counts %<>% melt()
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 1000, height = 1000)
+colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of genes")
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 1100, height = 500)
 ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) + 
   geom_bar(stat="identity", position="identity") +
-  facet_wrap(~ Tissue + Locality, scales = "free") +
+  facet_wrap(~ Tissue + Locality, scales = "free", ncol=4) +
   theme(text = element_text(size = 27), 
         #axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         #axis.title.y=element_blank(),
         strip.text.y = element_text(size = 27),
-        legend.text=element_text(size=28),
-        legend.title=element_text(size=30)) +
+        legend.text=element_text(size=22),
+        legend.title=element_text(size=25)) +
+  scale_fill_manual(values=c("brown1", "deepskyblue1")) +
   ylab("Number of DE genes")
 dev.off()
   
-
-# take home of this figure is that leaf tissue is far more predictable in DE gene numbers than root
-# in both species
-
 
 
 
@@ -532,15 +545,9 @@ dev.off()
 #            GO term enrichment             #
 #############################################
 
-# for the GO term enrichment tests
-mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
 
-names(mp) <- names(mp) %>% 
-  str_remove("-RA") %>%
-  str_remove("-RB") %>%
-  str_remove("-RC")
 
-#######################################GO.ID 
+#######################################
 #        majalis leaf kitzbuhl        #
 #######################################
 transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
@@ -603,7 +610,9 @@ prepare_go_df<-function(topgo_object){
   topgo_object %<>% 
     mutate(`Rich score`=Significant/Annotated) %>% 
     dplyr::select(Term, GO.ID, Significant, Annotated, classicFisher, `Rich score`) %>% 
-    filter(`Rich score` >= 0.01 & classicFisher < 0.005) %>% 
+    #filter(classicFisher < 0.05) %>% 
+    filter(classicFisher < 0.05 & `Rich score` >= 0.01) %>% 
+    head(10) %>% 
     data.frame()
   return(topgo_object)
 }
@@ -621,11 +630,11 @@ tSLeafDown<-prepare_go_df(transplant_traunsteineri_stulrich_leaf_down) %>% mutat
 
 mKRootUp<-prepare_go_df(transplant_majalis_kitzbuhl_root_up) %>% mutate(comparison="D. majalis Kitzbuhl", Direction="up")
 mSRootUp<-prepare_go_df(transplant_majalis_stulrich_root_up) %>% mutate(comparison="D. majalis St. Ulrich", Direction="up")
-tKRootUp<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_up) %>% mutate(comparison="D.t. Kitz.", Direction="up")
+tKRootUp<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_up) %>% mutate(comparison="D.t.Kitz", Direction="up")
 tSRootUp<-prepare_go_df(transplant_traunsteineri_stulrich_root_up) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="up")
 mKRootDown<-prepare_go_df(transplant_majalis_kitzbuhl_root_down) %>% mutate(comparison="D. majalis Kitzbuhl", Direction="down")
 mSRootDown<-prepare_go_df(transplant_majalis_stulrich_root_down) %>% mutate(comparison="D. majalis St. Ulrich", Direction="down")
-tKRootDown<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_down) %>% mutate(comparison="D. traunsteineri Kitzbuhl", Direction="down")
+tKRootDown<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_down) %>% mutate(comparison="D.t.Kitz", Direction="down")
 tSRootDown<-prepare_go_df(transplant_traunsteineri_stulrich_root_down) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="down")
 
 
@@ -650,42 +659,56 @@ root_go_bound<-rbind(mKRootUp,
 colnames(leaf_go_bound) <-c("Term", "GO.ID", "Significant", "Annotated", "classicFisher", "Rich factor", "comparison", "Direction")
 colnames(root_go_bound) <-c("Term", "GO.ID", "Significant", "Annotated", "classicFisher", "Rich factor", "comparison", "Direction")
 
+root_go_bound %>% filter(comparison == "D. majalis St. Ulrich" & `Rich factor` > 0.01 & classicFisher < 0.05)
+root_go_bound %>% filter(comparison == "D. traunsteineri Kitzbuhl" & `Rich factor` > 0.0001 & classicFisher < 0.05)
+root_go_bound %>% filter(comparison == "D. majalis Kitzbuhl" & classicFisher < 0.05)
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=2000, width=1800)
-ggplot(leaf_go_bound, aes(x=comparison, y=Term, color = Direction, size=`Rich factor`)) + 
-  geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free") + 
-  theme(text = element_text(size = 30), 
+# I am adding a new column with a placeholder the same across all rows
+# I will use this column as my X axis for the GO term plots
+# if I use the comparison column, it staggers the plots, and it looks better if the points are stacked
+leaf_go_bound_newcol <- leaf_go_bound %>% mutate(newcol="placeholder", tissue="Leaf")
+root_go_bound_newcol <- root_go_bound %>% mutate(newcol="placeholder", tissue="Root")
+
+
+a<-ggplot(leaf_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`Rich factor`)) + 
+  geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free", switch = "y", cols=vars(tissue)) + 
+  theme(text = element_text(size = 60), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 32),
+        strip.text.y = element_text(size = 45),
         legend.text=element_text(size=36),
-        legend.title=element_text(size=40)) + 
-  scale_size_continuous(range = c(5, 11)) + 
-  guides(colour = guide_legend(override.aes = list(size=10))) + 
-  scale_color_manual(values=c("blue", "red"))
-dev.off()
+        legend.title=element_text(size=40),
+        panel.spacing=unit(1, "lines")) + 
+  scale_size_continuous(range = c(9, 18)) + 
+  guides(colour = guide_legend(override.aes = list(size=17))) + 
+  scale_color_manual(values=c("blue", "red")) +
+  theme(legend.position = "none")
 
 # I had to shorten the name of one of the facet grids (D.t. Kitz due to soace
 # this alphabetically rearranges the orderr so locking in order of localitoies this way
-root_go_bound$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
+root_go_bound_newcol$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure7.png", height=2000, width=1800)
-ggplot(root_go_bound, aes(x=comparison, y=Term, color = Direction, size=`Rich factor`)) + 
-  geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free") + 
-  theme(text = element_text(size = 30), 
+
+b<-ggplot(root_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`Rich factor`)) + 
+  geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free", cols=vars(tissue)) + 
+  theme(text = element_text(size = 60), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 32),
+        strip.text.y = element_text(size = 44),
         legend.text=element_text(size=36),
-        legend.title=element_text(size=40)) + 
-  scale_size_continuous(range = c(5, 11)) + 
-  guides(colour = guide_legend(override.aes = list(size=10))) + 
-  scale_color_manual(values=c("blue", "red"))
+        legend.title=element_text(size=40),
+        panel.spacing=unit(1, "lines")) + 
+  scale_size_continuous(range = c(9, 18)) + 
+  guides(colour = guide_legend(override.aes = list(size=17))) + 
+  scale_color_manual(values=c("blue", "red")) +
+  scale_y_discrete(position = "right") +
+  theme(legend.position = "none") 
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=3000, width=4000)
+ggarrange(a, b, ncol=2)
 dev.off()
-
-
 
 
 
@@ -772,7 +795,7 @@ kitzbuhl_effect_of_environment_heatmap<-rbind(kitzbuhl_leaf_effect_of_environmen
 stulrich_annotation_col = data.frame(Species = c(rep("D. majalis", 8), rep("D. traunsteineri", 8)), Environment=c(rep("M", 4), rep("T", 4), rep("M", 4), rep("T", 4)))
 kitzbuhl_annotation_col = data.frame(Species = c(rep("D. majalis", 10), rep("D. traunsteineri", 10)), Environment=c(rep("M", 5), rep("T", 5), rep("M", 5), rep("T", 5)))
                                                        
- 
+
 rownames(stulrich_annotation_col)<-st_ulrich_effect_of_environment_heatmap %>% colnames()  
 rownames(kitzbuhl_annotation_col)<-kitzbuhl_effect_of_environment_heatmap %>% colnames()  
 
@@ -821,8 +844,77 @@ dev.off()
 
 
 
+####### getting annotations of the plastic reciprocal genes
+
+gene_to_go_table<-function(genes){
+  go_id_list<-c()
+  for (gene in genes){
+    go_ids<-mp[gene]
+    if (length(go_ids) >=1){
+      go_id_list <-c(go_id_list, go_ids[[1]])
+    }
+  }
+  go_id_list<-unique(go_id_list)
+  return(go_id_list)
+}
+
+st_ulrich_leaf_effect_of_environment_go<-st_ulrich_leaf_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
+st_ulrich_root_effect_of_environment_go<-st_ulrich_root_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
+kitzbuhl_leaf_effect_of_environment_go<-kitzbuhl_leaf_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
+kitzbuhl_root_effect_of_environment_go<-kitzbuhl_root_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
 
 
+
+
+transplant_majalis_kitzbuhl_leaf_genes<-get_significant_genes(transplant_majalis_kitzbuhl_leaf)
+transplant_majalis_stulrich_leaf_genes<-get_significant_genes(transplant_majalis_stulrich_leaf)
+transplant_traunsteineri_kitzbuhl_leaf_genes<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf)
+transplant_traunsteineri_stulrich_leaf_genes<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
+
+
+st_ulrich_leaf_effect_of_environment_genes<-get_significant_genes(st_ulrich_leaf_effect_of_environment)
+st_ulrich_root_effect_of_environment_genes<-get_significant_genes(st_ulrich_root_effect_of_environment)
+kitzbuhl_leaf_effect_of_environment_genes<-get_significant_genes(kitzbuhl_leaf_effect_of_environment)
+kitzbuhl_root_effect_of_environment_genes<-get_significant_genes(kitzbuhl_root_effect_of_environment)
+
+
+
+
+listInputKitzbuhl<-list(transplant_majalis_kitzbuhl_leaf_genes=transplant_majalis_kitzbuhl_leaf_genes,
+                transplant_traunsteineri_kitzbuhl_leaf_genes=transplant_traunsteineri_kitzbuhl_leaf_genes,
+                kitzbuhl_leaf_effect_of_environment_genes=kitzbuhl_leaf_effect_of_environment_genes,
+                kitzbuhl_root_effect_of_environment_genes=kitzbuhl_root_effect_of_environment_genes)
+
+listInputStUlrich<-list(
+                        transplant_majalis_stulrich_leaf_genes=transplant_majalis_stulrich_leaf_genes,
+                        transplant_traunsteineri_stulrich_leaf_genes=transplant_traunsteineri_stulrich_leaf_genes,
+                        st_ulrich_leaf_effect_of_environment_genes=st_ulrich_leaf_effect_of_environment_genes,
+                        st_ulrich_root_effect_of_environment_genes=st_ulrich_root_effect_of_environment_genes)
+
+listInputAll<-list(transplant_majalis_kitzbuhl_leaf_genes=transplant_majalis_kitzbuhl_leaf_genes,
+                        transplant_majalis_stulrich_leaf_genes=transplant_majalis_stulrich_leaf_genes,
+                        transplant_traunsteineri_kitzbuhl_leaf_genes=transplant_traunsteineri_kitzbuhl_leaf_genes,
+                        transplant_traunsteineri_stulrich_leaf_genes=transplant_traunsteineri_stulrich_leaf_genes,
+                        st_ulrich_leaf_effect_of_environment_genes=st_ulrich_leaf_effect_of_environment_genes,
+                        st_ulrich_root_effect_of_environment_genes=st_ulrich_root_effect_of_environment_genes,
+                        kitzbuhl_leaf_effect_of_environment_genes=kitzbuhl_leaf_effect_of_environment_genes,
+                        kitzbuhl_root_effect_of_environment_genes=kitzbuhl_root_effect_of_environment_genes)
+
+
+st_ulrich_leaf_effect_of_environment_go
+st_ulrich_root_effect_of_environment_go
+kitzbuhl_leaf_effect_of_environment_go
+kitzbuhl_root_effect_of_environment_go
+  
+listInputGO<-list(st_ulrich_leaf_effect_of_environment_go=st_ulrich_leaf_effect_of_environment_go,
+                  st_ulrich_root_effect_of_environment_go=st_ulrich_root_effect_of_environment_go,
+                  kitzbuhl_leaf_effect_of_environment_go=kitzbuhl_leaf_effect_of_environment_go,
+                  kitzbuhl_root_effect_of_environment_go=kitzbuhl_root_effect_of_environment_go)
+
+  
+
+
+upset(fromList(listInputAll), order.by = "freq", nsets = 10)
 
 
 
