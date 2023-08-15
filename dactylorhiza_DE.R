@@ -12,6 +12,7 @@ library(Pigengene)
 library(GO.db)
 library(reshape2)
 library(egg)
+library(eulerr)
 source("dactylorhiza_functions.R")
 
 
@@ -132,7 +133,7 @@ root_vst<-root_vst[,-30]
 pcaData <-plotPCA(root_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure1.png", width = 1200, height = 700)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 1200, height = 700)
 ggplot(pcaData, aes(PC1, PC2, color=locality, fill=locality, shape=interaction(species, treatment))) +
   geom_point(size=7, stroke = 1.5) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
@@ -794,7 +795,7 @@ kitzbuhl_effect_of_environment_heatmap<-rbind(kitzbuhl_leaf_effect_of_environmen
 
 stulrich_annotation_col = data.frame(Species = c(rep("D. majalis", 8), rep("D. traunsteineri", 8)), Environment=c(rep("M", 4), rep("T", 4), rep("M", 4), rep("T", 4)))
 kitzbuhl_annotation_col = data.frame(Species = c(rep("D. majalis", 10), rep("D. traunsteineri", 10)), Environment=c(rep("M", 5), rep("T", 5), rep("M", 5), rep("T", 5)))
-                                                       
+
 
 rownames(stulrich_annotation_col)<-st_ulrich_effect_of_environment_heatmap %>% colnames()  
 rownames(kitzbuhl_annotation_col)<-kitzbuhl_effect_of_environment_heatmap %>% colnames()  
@@ -803,7 +804,13 @@ rownames(kitzbuhl_annotation_col)<-kitzbuhl_effect_of_environment_heatmap %>% co
 ann_colors = list(Environment = c(M="deepskyblue", T="goldenrod1"),
                   Species = c(`D. majalis`="lightpink", `D. traunsteineri`="lightgreen"))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure8.png", height=2000, width=2300)
+nrow(st_ulrich_annotation)
+nrow(kitzbuhl_annotation)
+kitzbuhl_annotation$Tissue %>% table()
+st_ulrich_annotation$Tissue %>% table()
+
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure7.png", height=2000, width=2300)
 pheatmap.type(Data=st_ulrich_effect_of_environment_heatmap, 
               annRow=st_ulrich_annotation, 
               show_rownames=FALSE,
@@ -821,9 +828,9 @@ pheatmap.type(Data=st_ulrich_effect_of_environment_heatmap,
               gaps_col=c(4,8,12))
 dev.off()
 
-st_ulrich_annotation %>% filter(Tissue == "Leaf") %>% nrow()
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure9.png", height=2000, width=2300)
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure8.png", height=2000, width=2300)
 pheatmap.type(Data=kitzbuhl_effect_of_environment_heatmap, 
               annRow=kitzbuhl_annotation, 
               show_rownames=FALSE,
@@ -842,7 +849,88 @@ pheatmap.type(Data=kitzbuhl_effect_of_environment_heatmap,
 dev.off()
 
 
+#######################################################################################################
+#      Figure 9 plot venn diagram of effect of transplant (both species) and shared plastic genes     #
+#######################################################################################################
 
+
+shared_plastic_stulrich<-st_ulrich_effect_of_environment_heatmap %>% rownames()
+shared_plastic_kitzbuhl<-kitzbuhl_effect_of_environment_heatmap %>% rownames()
+
+stulrich_transplant_genes<-c(get_significant_genes(transplant_traunsteineri_stulrich_leaf),
+                             get_significant_genes(transplant_traunsteineri_stulrich_root),
+                             get_significant_genes(transplant_majalis_stulrich_leaf),
+                             get_significant_genes(transplant_majalis_stulrich_root)) %>% unique()
+
+kitzbuhl_transplant_genes<-c(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf),
+                             get_significant_genes(transplant_traunsteineri_kitzbuhl_root),
+                             get_significant_genes(transplant_majalis_kitzbuhl_leaf),
+                             get_significant_genes(transplant_majalis_kitzbuhl_root)) %>% unique()
+
+
+
+length(kitzbuhl_transplant_genes)
+kitzbuhl_effect_of_environment_heatmap %>% rownames() %>% length()
+intersect(kitzbuhl_transplant_genes, kitzbuhl_effect_of_environment_heatmap %>% rownames()) %>% length()
+
+length(stulrich_transplant_genes)
+st_ulrich_effect_of_environment_heatmap %>% rownames() %>% length()
+intersect(stulrich_transplant_genes, st_ulrich_effect_of_environment_heatmap %>% rownames()) %>% length()
+
+
+
+stu_intersect_euler <- intersect(stulrich_transplant_genes, shared_plastic_stulrich) %>% length()
+stu_trans_euler <- (stulrich_transplant_genes %>% length()) - stu_intersect_euler
+stu_plastic_euler <- (shared_plastic_stulrich %>% length()) - stu_intersect_euler
+
+ktz_intersect_euler <- intersect(kitzbuhl_transplant_genes, shared_plastic_kitzbuhl) %>% length()
+ktz_trans_euler <- (kitzbuhl_transplant_genes %>% length()) - ktz_intersect_euler
+ktz_plastic_euler <- (shared_plastic_kitzbuhl %>% length()) - ktz_intersect_euler
+
+
+set.seed(1)
+stulrich_euler <- c("St Ulrich transplant" = stu_trans_euler,
+                    "St Ulrich shared plastic" = stu_plastic_euler, 
+                    "St Ulrich transplant&St Ulrich shared plastic" = stu_intersect_euler)
+
+kitzbuhl_euler <- c("Kitzbuhl transplant" = ktz_trans_euler,
+                    "Kitzbuhl shared plastic" = ktz_plastic_euler, 
+                    "Kitzbuhl transplant&Kitzbuhl shared plastic"  = ktz_intersect_euler)
+
+
+
+p1 <- plot(euler(stulrich_euler), 
+           #quantities = TRUE,
+           fills = c("maroon2", "tan1"),
+           quantities = list(cex = 4),
+           legend=list(fontsize=28))
+
+p2 <- plot(euler(kitzbuhl_euler), 
+           #quantities = TRUE,
+           quantities = list(cex = 4),
+           fills = c("seagreen3", "dodgerblue"), 
+           legend=list(fontsize=28))
+
+png(file="Figure8.png", width = 1200, height = 1200)
+gridExtra::grid.arrange(p1, p2)
+dev.off()
+
+
+
+one<-transplant_traunsteineri_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+two<-transplant_traunsteineri_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+three<-transplant_traunsteineri_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+four<-transplant_traunsteineri_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+
+five<-transplant_majalis_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+six<-transplant_majalis_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+seven<-transplant_majalis_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+eight<-transplant_majalis_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
+
+
+intersect(test_go, c(one, two, three, four, five, six, seven, eight)) %>% length()
+
+test_go %>% length()
 
 ####### getting annotations of the plastic reciprocal genes
 
