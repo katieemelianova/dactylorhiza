@@ -144,22 +144,35 @@ leaf_vst<-varianceStabilizingTransformation(leaf_dds)
 root_vst<-root_vst[,-c(28)]
 
 # plot the PCA 
-pcaData <-plotPCA(root_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
+pcaRootData <-plotPCA(root_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
+percentRootVar <- round(100 * attr(pcaRootData, "percentVar"))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 1200, height = 700)
-ggplot(pcaData, aes(PC1, PC2, color=locality, fill=locality, shape=interaction(species, treatment))) +
+pcaLeafData <-plotPCA(leaf_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
+percentLeafVar <- round(100 * attr(pcaLeafData, "percentVar"))
+
+pcaRootData %<>% mutate("Tissue" = "Root")
+pcaLeafData %<>% mutate("Tissue" = "Leaf")
+pcaData <- rbind(pcaRootData, pcaLeafData)
+
+pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=locality, fill=locality, shape=interaction(species, treatment))) +
   geom_point(size=7, stroke = 1.5) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed() + 
+  xlab(paste0("PC1: ",percentRootVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentRootVar[2],"% variance")) + 
+  #coord_fixed() + 
   theme(legend.title = element_blank(),
         text = element_text(size = 20), 
         legend.text=element_text(size=25),
         axis.text=element_text(size=24),
-        axis.title=element_text(size=28)) +
-  scale_shape_manual(values = c(16, 15, 10, 7))
+        axis.title=element_text(size=28),
+        plot.margin = unit(c(0,0,0,0), "cm"),
+        strip.text.x = element_text(size = 27),) +
+  scale_shape_manual(values = c(16, 15, 10, 7)) +
+  facet_wrap(~ Tissue, ncol=1)
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 1000, height = 1000)
+pca_plot
 dev.off()
+
 
 
 
@@ -189,6 +202,8 @@ traunsteineri_majalis_root_T_kitzbuhl<-specify_comparison(root_samples, df_count
 traunsteineri_majalis_leaf_M_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 
+traunsteineri_majalis_leaf_M_kitzbuhl$results
+
 ####################
 #    ST ULRICH     #
 #################### 
@@ -205,7 +220,7 @@ traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_count
 #    Figure 3 Plotting constitutively DEGs   #
 ##############################################
 
-pvalue_threshold <-  100
+pvalue_threshold <- 0.05
 logfc_threshold<-2
 
 tmM_stu_root<-traunsteineri_majalis_root_M_stulrich$results %>% 
@@ -249,26 +264,26 @@ tmT_ktz_leaf<-traunsteineri_majalis_leaf_T_kitzbuhl$results %>%
   dplyr::select(log2FoldChange, padj) %>% 
   rownames_to_column(var="gene_id")
 
-colname_string<-c("gene_id", "majalis_env", "majalis_env_padj", "traunst_env", "traunst_env_padj", "comparison")
+colname_string<-c("gene_id", "majalis_env", "majalis_env_padj", "traunst_env", "traunst_env_padj", "locality", "tissue")
 
 stu_root<-inner_join(tmM_stu_root, 
                      tmT_stu_root, 
-                     by="gene_id") %>% mutate(comparison="St. Ulrich root") %>%
+                     by="gene_id") %>% mutate(locality="St. Ulrich", tissue="Root") %>%
   set_colnames(colname_string)
 
 ktz_root<-inner_join(tmM_ktz_root, 
                      tmT_ktz_root, 
-                     by="gene_id") %>% mutate(comparison="Kitzbuhl root") %>%
+                     by="gene_id") %>% mutate(locality="Kitzbuhl", tissue="Root") %>%
   set_colnames(colname_string)
 
 stu_leaf<-inner_join(tmM_stu_leaf, 
                      tmT_stu_leaf, 
-                     by="gene_id") %>% mutate(comparison="St. Ulrich leaf") %>%
+                     by="gene_id") %>% mutate(locality="St. Ulrich", tissue="Leaf") %>%
   set_colnames(colname_string)
 
 ktz_leaf<-inner_join(tmM_ktz_leaf, 
                      tmT_ktz_leaf, 
-                     by="gene_id") %>% mutate(comparison="Kitzbuhl leaf") %>%
+                     by="gene_id") %>% mutate(locality="Kitzbuhl", tissue="Leaf") %>%
   set_colnames(colname_string)
 
 all_bound<-rbind(stu_root,
@@ -276,43 +291,64 @@ all_bound<-rbind(stu_root,
       stu_leaf,
       ktz_leaf)
 
-all_bound %<>% mutate(status=case_when(majalis_env > 2 & 
-                                         traunst_env > 2 &
+
+
+all_bound %<>% mutate(status=case_when(majalis_env_padj < 0.05 &
+                                         traunst_env_padj < 0.05 ~ "Constitutively DE",
                                          majalis_env_padj < 0.05 &
-                                         traunst_env_padj < 0.05 ~ "D. traunsteineri > D. majalis",
-                                       majalis_env < -2 & 
-                                         traunst_env < -2 &
-                                         majalis_env_padj < 0.05 &
-                                         traunst_env_padj < 0.05 ~ "D. majalis > D. traunsteineri"))
+                                         #(majalis_env > 2 | majalis_env < -2) &
+                                         #(traunst_env < 2 | traunst_env > -2) &
+                                         traunst_env_padj > 0.05 ~ "DE in D. majalis environment only",
+                                         #(majalis_env < 2 | majalis_env > -2) &
+                                         #(traunst_env > 2 | traunst_env < -2) &
+                                         majalis_env_padj > 0.05 &
+                                         traunst_env_padj < 0.05 ~ "DE in D. traunsteineri environment only"))
 
 
 # designate all unlabelled status values Not Significant         
 all_bound %<>% replace_na(list(status = "Not significant"))
 
+
 # arrange the data so that the DE points are plotted last and on top of the grey non significant points
-all_bound %<>% arrange(desc(status))
+all_bound %<>% arrange(factor(status, levels = c("Not significant", 
+                                                 "DE in D. majalis environment only", 
+                                                 "DE in D. traunsteineri environment only", 
+                                                 "Constitutively DE")))
+
+
+
 
 png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1300, height = 1000)
 ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
-  geom_point(alpha=0.5, size = 7) + 
+  geom_point(alpha=0.5, size = 4) + 
+  ylim(-10, 10) +
+  xlim(-10, 10) +
   ylab("Fold change in traunsteineri environment") +
   xlab("Fold change in majalis environment") +
-  scale_color_manual(values = c("D. majalis > D. traunsteineri" = "black", 
-                                "D. traunsteineri > D. majalis" = "red",
-                                "Not significant" = "grey")) + 
+  scale_color_manual(values = c("DE in D. majalis environment only" = "gold", 
+                                "DE in D. traunsteineri environment only" = "deeppink",
+                                "Not significant" = "grey",
+                                "Constitutively DE" = "dodgerblue")) + 
+  facet_wrap(~ tissue + locality, ncol=2) +
   theme(text = element_text(size = 20), 
         legend.text=element_text(size=20),
         #legend.title=element_text(size=23),
         axis.text=element_text(size=24),
         axis.title=element_text(size=28),
-        legend.title=element_blank()) +
+        legend.title=element_blank(),
+        strip.text.x = element_text(size = 27)) +
   guides(colour = guide_legend(override.aes = list(size=10)))
 dev.off()
 
-all_bound %>% filter(status == "D. traunsteineri > D. majalis") %>% dplyr::select(comparison) %>% table()
-all_bound %>% filter(status == "D. majalis > D. traunsteineri") %>% dplyr::select(comparison) %>% table()
 
+# how many DE genes are there in each category?
+all_bound %>% dplyr::select("status") %>% pull() %>% table()
 
+# how many genes are upregulated in traunsteineri relative to majalis?
+all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05 & traunst_env_padj < 0.05)
+
+# how many genes are upregulated in majalis relative to traunsteineri?
+all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05 & traunst_env_padj < 0.05)
 
 
 gene_ids_constitutive_traunst_up<-all_bound %>% filter(status == "D. traunsteineri > D. majalis") %>% dplyr::select(gene_id, comparison)
@@ -411,6 +447,8 @@ d<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
 library(RColorBrewer)
 myCol <- brewer.pal(4, "Pastel2")
 
+
+myCol<-c("deeppink", "yellowgreen", "deepskyblue", "orange1")
 # Chart
 venn.diagram(
   x = list(a, b, c, d),
@@ -491,7 +529,6 @@ label_expression_direction<-function(results_object){
     replace_na(list(diffexpressed = "Not significant"))
 }
 
-
 mKLeaf<-transplant_majalis_kitzbuhl_leaf$results %>% label_expression_direction()
 mSLeaf<-transplant_majalis_stulrich_leaf$results %>% label_expression_direction()
 mKRoot<-transplant_majalis_kitzbuhl_root$results %>% label_expression_direction()
@@ -501,7 +538,6 @@ tKLeaf<-transplant_traunsteineri_kitzbuhl_leaf$results %>% label_expression_dire
 tSLeaf<-transplant_traunsteineri_stulrich_leaf$results %>% label_expression_direction()
 tKRoot<-transplant_traunsteineri_kitzbuhl_root$results %>% label_expression_direction()
 tSRoot<-transplant_traunsteineri_stulrich_root$results %>% label_expression_direction()
-
 
 species=c(rep("D. majalis", 4), rep("D traunsteineri", 4))
 tissue=c(rep("Leaf", 2), rep("Root", 2), rep("Leaf", 2), rep("Root", 2))
@@ -539,10 +575,10 @@ de_counts %<>% melt()
 
 colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of genes")
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 1100, height = 500)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 650, height = 900)
 ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) + 
   geom_bar(stat="identity", position="identity") +
-  facet_wrap(~ Tissue + Locality, scales = "free", ncol=4) +
+  facet_wrap(~ Tissue + Locality, scales = "free", ncol=2) +
   theme(text = element_text(size = 27), 
         #axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
