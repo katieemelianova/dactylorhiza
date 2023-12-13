@@ -318,32 +318,23 @@ all_bound %<>% arrange(factor(status, levels = c("Not significant",
                                                  "Constitutively DE")))
 
 
+bar_dataset<-all_bound %>% dplyr::select(status, locality, tissue) %>% filter(status != "Not significant") %>% melt()
+bar <- ggplot(bar_dataset, aes(x=locality, fill=status)) +
+  geom_bar(position="stack") + facet_wrap(~ tissue, ncol=2) +
+  scale_fill_manual(values = c("DE in D. majalis environment only" = "gold", 
+                                "DE in D. traunsteineri environment only" = "deeppink",
+                                "Constitutively DE" = "dodgerblue")) +
+  ylab("Number of Genes") +
+  #xlab("Locality") +
+  theme(text = element_text(size = 20), 
+        legend.position = "none",
+        axis.text=element_text(size=24),
+        axis.title=element_text(size=28),
+        axis.title.x=element_blank(),
+        strip.text.x = element_text(size = 27),
+        axis.text.x = element_text(angle = 45, size = 20, vjust = 1, hjust=1))
 
-all_bound %>% dplyr::select("status", "locality", "tissue") %>% table()
-
-
-all_bound %>% filter(status == "DE in D. majalis environment only" & traunst_env > 0 & tissue == "Root") %>% nrow()
-all_bound %>% filter(status == "DE in D. majalis environment only" & traunst_env > 0 & tissue == "Leaf") %>% nrow()
-
-all_bound %>% filter(status == "DE in D. majalis environment only" & traunst_env < 0 & tissue == "Root") %>% nrow()
-all_bound %>% filter(status == "DE in D. majalis environment only" & traunst_env < 0 & tissue == "Leaf") %>% nrow()
-
-
-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & traunst_env > 0) %>% nrow()
-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & traunst_env < 0) %>% nrow()
-
-test <- ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
-  geom_point(alpha=0.5, size = 4)
-
-ggplot(all_bound, aes(x=status, fill=status)) +
-  geom_bar(position="stack") + facet_wrap(~ tissue + locality, ncol=2)
-
-test<-all_bound %>% dplyr::select(status, locality, tissue) %>% filter(status != "Not significant") %>% melt()
-ggplot(test, aes(x=locality, fill=status)) +
-  geom_bar(position="stack") + facet_wrap(~ tissue, ncol=2)
-
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1300, height = 1000)
-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
+scatt <-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
   geom_point(alpha=0.5, size = 4) + 
   ylim(-10, 10) +
   xlim(-10, 10) +
@@ -360,10 +351,13 @@ ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
         axis.text=element_text(size=24),
         axis.title=element_text(size=28),
         legend.title=element_blank(),
-        strip.text.x = element_text(size = 27)) +
+        strip.text.x = element_text(size = 27), 
+        plot.margin = margin(0.5, 0.5, 0.5, 2, "cm")) +
   guides(colour = guide_legend(override.aes = list(size=10)))
-dev.off()
 
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1400, height = 580)
+egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
+dev.off()
 
 # how many DE genes are there in each category?
 all_bound %>% dplyr::select("status") %>% pull() %>% table()
@@ -375,82 +369,60 @@ all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05
 all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05 & traunst_env_padj < 0.05)
 
 
-#a<-get_significant_genes(transplant_majalis_kitzbuhl_leaf)
-#b<-get_significant_genes(transplant_majalis_stulrich_leaf)
-#c<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf)
-#d<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
-#
-#intersect(a, c)
-#
-#mylist=list(mkL=a,
-#            msL=b,
-#            tkL=c,
-#            tsL=d,
-#            mkR=e,
-#            msR=f,
-#            tkR=g,
-#            tsR=h,
-#            constitutive=const)
-#
-#
-#upset(fromList(mylist), order.by = "freq", nsets = 10)
-
-
-#e<-get_significant_genes(transplant_majalis_kitzbuhl_root)
-#f<-get_significant_genes(transplant_majalis_stulrich_root)
-#g<-get_significant_genes(transplant_traunsteineri_kitzbuhl_root)
-#h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
-
-
-
-#const_traunst_up <- all_bound %>% filter(status == "Constitutively DE" & majalis_env < 0 & traunst_env < 0) %>% dplyr::select(gene_id) %>% pull()
-#const_majalis_up <- all_bound %>% filter(status == "Constitutively DE" & majalis_env > 0 & traunst_env > 0) %>% dplyr::select(gene_id) %>% pull()
-#const <- all_bound %>% filter(status == "Constitutively DE") %>% dplyr::select(gene_id) %>% pull()
-
-
-#const %<>% str_remove(".t1:cds") %>% str_remove("cds") %>% str_remove("-RA:") %>% str_remove(".t2")
-#const_traunst_up %<>% str_remove(".t1:cds") %>% str_remove("cds") %>% str_remove("-RA:") %>% str_remove(".t2")
-#const_majalis_up %<>% str_remove(".t1:cds") %>% str_remove("cds") %>% str_remove("-RA:") %>% str_remove(".t2")
-#
-#consitutive_trauns_up_goenrich<-get_enriched_terms(const_traunst_up, mp) 
-#consitutive_majalis_up_goenrich<-get_enriched_terms(const_majalis_up, mp) 
-#consitutive_goenrich<-get_enriched_terms(const, mp) 
-#
-#
-#consitutive_trauns_up_goenrich %>% filter(Significant > 1)
-#consitutive_majalis_up_goenrich %>% filter(Significant > 1)
-#consitutive_goenrich %>% filter(Significant > 1 & classicFisher < 0.05)
-#
-#intersect(a, const)
-#intersect(a, const)
-
-
-
 #############################################
 #    Table 1 Constitutively DEG GO terms    #
 #############################################
 
+# get a table of GO terms mapped to their description
 godb_table<-toTable(GOTERM)
 
+# make an empty data frame to add info to
 constitutive_annotation<-data.frame(Term=c(),
                                     Ontology=c(),
                                     expression_pattern=c(),
                                     gene_id=c(),
                                     comparison=c())
 
-for (i in 1:nrow(gene_ids_constitutive_traunst_up)){
-  go_ids<-mp[gene_ids_constitutive_traunst_up[i,]$gene_id][[1]]
+# get the constitutively 
+const_gene_ids <- all_bound %>% filter(status == "Constitutively DE") %>% dplyr::select("gene_id") %>% pull()
+#const_gene_ids_fact<-const_gene_ids %>% str_remove("-RA") %>% str_remove("-RB") 
+mp[const_gene_ids_fact] 
+
+# get info for constitutive genes, edit gene IDs to match GO, and add expression pattern info
+all_bound_constitutive <- all_bound %>% filter(status == "Constitutively DE")
+#all_bound_constitutive$gene_id %<>% str_remove("-RA") %>% str_remove("-RB") 
+
+
+all_bound_constitutive %<>% mutate(pattern=case_when(majalis_env > 2 & traunst_env > 2 ~ "traunsteineri up", 
+                                                    majalis_env < -2 & traunst_env < -2 ~ "majalis up",
+                                                    majalis_env > 2 & traunst_env < -2 ~ "opposite", 
+                                                    majalis_env < -2 & traunst_env > 2 ~ "opposite")) %>% na.omit()
+
+
+for (i in 1:nrow(all_bound_constitutive)){
+  gene_name<-(all_bound_constitutive[i,]$gene_id)
+  print(gene_name)
+  go_ids<-mp[gene_name][[1]]
   if (length(go_ids) >=1){
-    print(gene_ids_constitutive_traunst_up[i,])
     go<-godb_table[godb_table$go_id %in% go_ids,]
-    
+    go<-godb_table[godb_table$go_id %in% go_ids,]
     new_rows<-data.frame(go[,c("Term", "Ontology")] %>% unique())
-    new_rows$expression_pattern<-"T > M"
-    new_rows$gene_id=gene_ids_constitutive_traunst_up[i,]$gene_id
-    new_rows$comparison=gene_ids_constitutive_traunst_up[i,]$comparison
+    new_rows$gene_id=gene_name
+    new_rows$expression_pattern=all_bound_constitutive[i,]$pattern
     constitutive_annotation <- rbind(constitutive_annotation, new_rows)
   }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 for (i in 1:nrow(gene_ids_constitutive_majalis_up)){
   go_ids<-mp[gene_ids_constitutive_majalis_up[i,]$gene_id][[1]]
@@ -817,6 +789,7 @@ a<-ggplot(leaf_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`R
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
         strip.text.y = element_text(size = 49),
+        strip.text.x = element_text(size = 53),
         legend.text=element_text(size=36),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines")) + 
@@ -837,6 +810,7 @@ b<-ggplot(root_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`R
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
         strip.text.y = element_text(size = 49),
+        strip.text.x = element_text(size = 53),
         legend.text=element_text(size=36),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines")) + 

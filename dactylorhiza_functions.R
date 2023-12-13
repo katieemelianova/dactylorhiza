@@ -8,7 +8,7 @@ specify_comparison<-function(samples, counts, selection_statement){
 }
 
 
-run_diffexp<-function(comparison, design_term, gene_lengths, cpm_threshold=5, min_count_per_sample=8){
+run_diffexp<-function(comparison, design_term, gene_lengths, cpm_threshold=1, min_count_per_sample=3){
   formula_parsed<-paste("~", design_term)
   dds <- DESeqDataSetFromMatrix(countData = comparison[["counts"]],
                                 colData = comparison[["samples"]],
@@ -155,9 +155,33 @@ draw_heatmap2 <-function(dds){
 
 
 
-get_significant_genes<-function(results_object, fold_change=2, pvalue=0.0005){
-  de_genes<-results_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > !!fold_change & padj < !!pvalue) %>% rownames()
-  return(de_genes)
+get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
+  if (directional == TRUE) {
+    de_genes_up<-results_object$results %>% data.frame() %>% filter(log2FoldChange > !!fold_change & padj < !!pvalue) %>% rownames()
+    de_genes_down<-results_object$results %>% data.frame() %>% filter(log2FoldChange < -!!fold_change & padj < !!pvalue) %>% rownames()
+    if (mappings_format  == TRUE){
+      de_genes_up %<>% str_remove(":cds")
+      de_genes_down %<>% str_remove(":cds")
+      de_genes_up %<>% str_remove("-RA")
+      de_genes_up %<>% str_remove("-t1")
+      de_genes_down %<>% str_remove("-RA")
+      de_genes_down %<>% str_remove("-t1")
+    }
+    to_return_genes <- list(up=de_genes_up, down=de_genes_down)
+    return(to_return_genes)
+  } else if (directional == FALSE) {
+    de_genes<-results_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > !!fold_change & padj < !!pvalue) %>% rownames()
+    to_return_genes <- de_genes
+    return(de_genes)
+  }
 }
+  
+  # to make the gene names match with the names in the GO term mappings, we need to cut off the last bit (optional)
+  #if (mappings_format == TRUE){
+  #  
+  #  de_genes %<>% str_remove(":cds")
+  #}
+  
+
 
 
