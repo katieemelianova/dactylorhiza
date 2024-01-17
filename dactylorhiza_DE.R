@@ -17,6 +17,27 @@ library(openxlsx)
 source("dactylorhiza_functions.R")
 
 
+############################################################
+#       make supplementary table of read count stats       #
+############################################################
+
+star_summary_stats<-read.table("rna_seq_summary_statistics.txt") %>% set_colnames(c("Library", "Input Reads", "Uniquely Mapped", "Percent Multimapped"))
+colnames(star_summary_stats)
+star_summary_stats$Library<-str_remove(star_summary_stats$Library, "Log.final.out")
+star_summary_stats$`Percent Multimapped` <- str_remove(star_summary_stats$`Percent Multimapped`, "%") %>% as.numeric()
+star_summary_stats$Library<-str_split_fixed(star_summary_stats$Library, "/", 3)[,3]
+
+star_summary_stats %<>% mutate(Tissue=case_when(endsWith(star_summary_stats$Library, "r") == TRUE ~ "Root",
+                                                !endsWith(star_summary_stats$Library, "r") == TRUE ~ "Leaf"))
+
+write.xlsx(star_summary_stats, file = "Table_S2_read_mapping_summary.xlsx")
+
+star_summary_stats%>% filter(Tissue == "Leaf") %>% summary()
+star_summary_stats%>% filter(Tissue == "Root") %>% summary()
+
+
+
+
 #############################################################################
 #        load in the GO ID mappings to transcripts for use later on         #
 #############################################################################
@@ -24,10 +45,10 @@ source("dactylorhiza_functions.R")
 # for the GO term enrichment tests
 mp<-readMappings("/Users/katieemelianova/Desktop/Dactylorhiza/data/all_annotations_justGO.txt")
 
-names(mp) <- names(mp) %>% 
-  str_remove("-RA") %>%
-  str_remove("-RB") %>%
-  str_remove("-RC")
+#names(mp) <- names(mp) %>% 
+#  str_remove("-RA") %>%
+#  str_remove("-RB") %>%
+#  str_remove("-RC")
 
 #############################################################################
 #       make a function fo annotating samples sing naming convention        #
@@ -118,6 +139,20 @@ df_leaf<-read_in_featurecounts('dactylorhiza_leaf_featurecounts', strings_to_rem
 df_leaf$counts %<>% dplyr::select(-contains(samples_to_exclude))
 df_counts_leaf<-df_leaf$counts
 df_lengths_leaf<-df_leaf$lengths
+
+
+###############################################################
+#      Count how many genes are exoressed total per tissue    #
+###############################################################
+
+
+mcols(leaf_dds)$basepairs<-df_leaf$lengths
+leaf_dds <- estimateSizeFactors(leaf_dds)
+length(which(rowSums(counts(leaf_dds, normalized=TRUE) >= 1 ) >= 3))
+
+mcols(root_dds)$basepairs<-df_root$lengths
+root_dds <- estimateSizeFactors(root_dds)
+length(which(rowSums( counts(root_dds, normalized=TRUE) >= 1 ) >= 3))
 
 ######################################
 #      Figure 2 Draw PCA plots       #
@@ -381,58 +416,29 @@ constitutive_annotation<-data.frame(Term=c(),
                                     Ontology=c(),
                                     expression_pattern=c(),
                                     gene_id=c(),
-                                    comparison=c())
+                                    locality=c(),
+                                    tissue=c())
 
-# get the constitutively 
-const_gene_ids <- all_bound %>% filter(status == "Constitutively DE") %>% dplyr::select("gene_id") %>% pull()
-#const_gene_ids_fact<-const_gene_ids %>% str_remove("-RA") %>% str_remove("-RB") 
-mp[const_gene_ids_fact] 
-
-# get info for constitutive genes, edit gene IDs to match GO, and add expression pattern info
+# get info for constitutive genes, and add expression pattern info
 all_bound_constitutive <- all_bound %>% filter(status == "Constitutively DE")
-#all_bound_constitutive$gene_id %<>% str_remove("-RA") %>% str_remove("-RB") 
-
-
-all_bound_constitutive %<>% mutate(pattern=case_when(majalis_env > 2 & traunst_env > 2 ~ "traunsteineri up", 
-                                                    majalis_env < -2 & traunst_env < -2 ~ "majalis up",
+all_bound_constitutive %<>% mutate(pattern=case_when(majalis_env > 2 & traunst_env > 2 ~ "traunsteineri > majalis", 
+                                                    majalis_env < -2 & traunst_env < -2 ~ "majalis > traunsteineri",
                                                     majalis_env > 2 & traunst_env < -2 ~ "opposite", 
                                                     majalis_env < -2 & traunst_env > 2 ~ "opposite")) %>% na.omit()
 
-
+# loop through the data and add GO term info into a table, write to excel output
 for (i in 1:nrow(all_bound_constitutive)){
   gene_name<-(all_bound_constitutive[i,]$gene_id)
-  print(gene_name)
   go_ids<-mp[gene_name][[1]]
+  print(go_ids)
   if (length(go_ids) >=1){
     go<-godb_table[godb_table$go_id %in% go_ids,]
     go<-godb_table[godb_table$go_id %in% go_ids,]
     new_rows<-data.frame(go[,c("Term", "Ontology")] %>% unique())
-    new_rows$gene_id=gene_name
     new_rows$expression_pattern=all_bound_constitutive[i,]$pattern
-    constitutive_annotation <- rbind(constitutive_annotation, new_rows)
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-for (i in 1:nrow(gene_ids_constitutive_majalis_up)){
-  go_ids<-mp[gene_ids_constitutive_majalis_up[i,]$gene_id][[1]]
-  if (length(go_ids) >=1){
-    print(gene_ids_constitutive_majalis_up[i,])
-    go<-godb_table[godb_table$go_id %in% go_ids,]
-    new_rows<-data.frame(go[,c("Term", "Ontology")] %>% unique())
-    new_rows$expression_pattern<-"M > T"
-    new_rows$gene_id=gene_ids_constitutive_majalis_up[i,]$gene_id
-    new_rows$comparison=gene_ids_constitutive_majalis_up[i,]$comparison
+    new_rows$gene_id=gene_name
+    new_rows$locality=all_bound_constitutive[i,]$locality
+    new_rows$tissue=all_bound_constitutive[i,]$tissue
     constitutive_annotation <- rbind(constitutive_annotation, new_rows)
   }
 }
@@ -476,7 +482,7 @@ transplant_traunsteineri_stulrich_root<-specify_comparison(root_samples, df_coun
 
 
 ######################################################
-#    Figure 4 Venn Diagram of number of DE genes     #
+#    Figure 4A Venn Diagram of number of DE genes     #
 ######################################################
 
 
@@ -495,7 +501,7 @@ myCol<-c("deeppink", "yellowgreen", "deepskyblue", "orange1")
 venn.diagram(
   x = list(a, b, c, d),
   category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure4a.png',
+  filename = 'Figure4A_Leaf.png',
   output=TRUE,
   
   # Output features
@@ -530,7 +536,7 @@ h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
 venn.diagram(
   x = list(e, f, g, h),
   category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure4b.png',
+  filename = 'Figure4A_Root.png',
   output=TRUE,
   
   # Output features
@@ -559,7 +565,7 @@ venn.diagram(
 
 
 #############################################
-#       Figure 5 DE gene count plots        #
+#       Figure 4B DE gene count plots        #
 #############################################
 
 # make a function to label up or down differential expression (significant)
@@ -616,9 +622,11 @@ de_counts$downregulated <- (-de_counts$downregulated)
 
 de_counts %<>% melt()
 
+de_counts$Tissue<-paste(de_counts$Tissue, "Plastic")
+
 colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of genes")
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", width = 900, height = 1200)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4B.png", width = 900, height = 1200)
 ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) + 
   geom_bar(stat="identity", position="identity") +
   facet_wrap(~ Tissue + Locality, scales = "free", ncol=2) +
@@ -641,12 +649,10 @@ ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) +
                                                          "tSRoot" = "D. traunsteineri")) +
   ylim(-400, 500)
 dev.off()
-  
 
-de_counts %>% filter(Tissue == "Leaf")
-de_counts %>% filter(Tissue == "Leaf" & Locality == "St. Ulrich")
 
-de_counts %>% filter(Tissue == "Root")
+
+
 
 
 
@@ -654,58 +660,56 @@ de_counts %>% filter(Tissue == "Root")
 #            GO term enrichment             #
 #############################################
 
-
-
 #######################################
 #        majalis leaf kitzbuhl        #
 #######################################
-transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = FALSE)$up, mp) 
+transplant_majalis_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE, mappings_format = FALSE)$down, mp) 
 
 #######################################
 #        majalis leaf st ulrich        #
 #######################################
-transplant_majalis_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_majalis_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = FALSE)$up, mp) 
+transplant_majalis_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE, mappings_format = FALSE)$down, mp) 
 
 
 
 #######################################
 #        majalis root kitzbuhl        #
 #######################################
-transplant_majalis_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_majalis_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE)$up, mp) 
+transplant_majalis_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE)$down, mp) 
 
 #######################################
 #        majalis root st ulrich       #
 #######################################
-transplant_majalis_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_majalis_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_majalis_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE)$up, mp) 
+transplant_majalis_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE)$down, mp) 
 
 #######################################
 #     traunsteineri leaf kitzbuhl     #
 #######################################
-transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_traunsteineri_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_kitzbuhl_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE)$up, mp) 
+transplant_traunsteineri_kitzbuhl_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE)$down, mp) 
 
 
 #######################################
 #     traunsteineri leaf st ulrich    #
 #######################################
-transplant_traunsteineri_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_traunsteineri_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_stulrich_leaf_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE)$up, mp) 
+transplant_traunsteineri_stulrich_leaf_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE)$down, mp) 
 
 #######################################
 #     traunsteineri root kitzbuhl     #
 #######################################
-transplant_traunsteineri_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_traunsteineri_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_kitzbuhl_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE)$up, mp) 
+transplant_traunsteineri_kitzbuhl_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE)$down, mp) 
 
 #######################################
 #     traunsteineri root st ulrich    #
 #######################################
-transplant_traunsteineri_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE, mappings_format = TRUE)$up, mp) 
-transplant_traunsteineri_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE, mappings_format = TRUE)$down, mp) 
+transplant_traunsteineri_stulrich_root_up<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE)$up, mp) 
+transplant_traunsteineri_stulrich_root_down<-get_enriched_terms(get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE)$down, mp) 
 
 
 
@@ -820,9 +824,27 @@ b<-ggplot(root_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`R
   scale_y_discrete(position = "right") +
   theme(legend.position = "none") 
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=3000, width=4200)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", height=3000, width=4200)
 egg::ggarrange(a, b, ncol=2)
 dev.off()
+
+
+
+
+library(pheatmap)
+
+
+orthologs<-read.table("/Users/katieemelianova/Desktop/Diospyros/Orthogroups.GeneCount.tsv", header=TRUE, col.names = c("impolita", "sandwicensis", "yahouensis", "total"))
+orthologs %<>% dplyr::select("impolita", "sandwicensis", "yahouensis")
+
+ortho_sums<-orthologs %>% rowMeans()
+
+orthologs/ortho_sums
+
+
+orthologs
+pheatmap(orthologs/ortho_sums, show_rownames=FALSE)
+
 
 
 ########################################################
