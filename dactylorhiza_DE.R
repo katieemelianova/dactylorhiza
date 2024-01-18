@@ -14,6 +14,7 @@ library(reshape2)
 library(egg)
 library(eulerr)
 library(openxlsx)
+library(SuperExactTest)
 source("dactylorhiza_functions.R")
 
 
@@ -142,17 +143,26 @@ df_lengths_leaf<-df_leaf$lengths
 
 
 ###############################################################
-#      Count how many genes are exoressed total per tissue    #
+#      Count how many genes are expressed total per tissue    #
 ###############################################################
+leaf_kitzbuhel_names<-leaf_samples %>% filter(locality == "Kitzbuhl") %>% rownames()
+leaf_stulrich_names<-leaf_samples %>% filter(locality == "St Ulrich") %>% rownames()
+
+root_kitzbuhel_names<-root_samples %>% filter(locality == "Kitzbuhl") %>% rownames()
+root_stulrich_names<-root_samples %>% filter(locality == "St Ulrich") %>% rownames()
 
 
 mcols(leaf_dds)$basepairs<-df_leaf$lengths
 leaf_dds <- estimateSizeFactors(leaf_dds)
-length(which(rowSums(counts(leaf_dds, normalized=TRUE) >= 1 ) >= 3))
+length(which(rowSums(counts(leaf_dds, normalized=TRUE)[,leaf_kitzbuhel_names] >= 1 ) >= 3))
+length(which(rowSums(counts(leaf_dds, normalized=TRUE)[,leaf_stulrich_names] >= 1 ) >= 3))
+
 
 mcols(root_dds)$basepairs<-df_root$lengths
 root_dds <- estimateSizeFactors(root_dds)
-length(which(rowSums( counts(root_dds, normalized=TRUE) >= 1 ) >= 3))
+length(which(rowSums( counts(root_dds, normalized=TRUE)[,root_kitzbuhel_names] >= 1 ) >= 3))
+length(which(rowSums( counts(root_dds, normalized=TRUE)[,root_stulrich_names] >= 1 ) >= 3))
+
 
 ######################################
 #      Figure 2 Draw PCA plots       #
@@ -402,6 +412,62 @@ all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05
 
 # how many genes are upregulated in majalis relative to traunsteineri?
 all_bound %>% filter(majalis_env > 2 & traunst_env > 2 & majalis_env_padj < 0.05 & traunst_env_padj < 0.05)
+
+
+######################################################################
+#    Test for whether more constitutively DEGs are found by chance   #
+######################################################################
+
+
+
+
+rootK_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+rootK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+rootK_DEG_M <- c(rootK_DEG_M, rootK_consititutive)
+rootK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+rootK_DEG_T <- c(rootK_DEG_T, rootK_consititutive)
+
+rootS_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+rootS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+rootS_DEG_M <- c(rootS_DEG_M, rootS_consititutive)
+rootS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+rootS_DEG_T <- c(rootS_DEG_T, rootS_consititutive)
+
+
+leafK_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+leafK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+leafK_DEG_M <- c(leafK_DEG_M, leafK_consititutive)
+leafK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+leafK_DEG_T <- c(leafK_DEG_T, leafK_consititutive)
+
+leafS_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+leafS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+leafS_DEG_M <- c(leafS_DEG_M, leafS_consititutive)
+leafS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+leafS_DEG_T <- c(leafS_DEG_T, leafS_consititutive)
+
+
+
+
+total_genes_tested_root<-unique(c(ktz_root$gene_id, stu_root$gene_id)) %>% length()
+total_genes_tested_leaf<-unique(c(ktz_leaf$gene_id, stu_leaf$gene_id)) %>% length()
+
+ResultRoot=supertest(list(rootK_DEG_M=rootK_DEG_M, 
+                          rootK_DEG_T=rootK_DEG_T,
+                          rootS_DEG_T=rootS_DEG_T,
+                          rootS_DEG_M=rootS_DEG_M), n=total_genes_tested_root) 
+
+ResultLeaf=supertest(list(leafK_DEG_M=leafK_DEG_M, 
+                          leafK_DEG_T=leafK_DEG_T, 
+                          leafS_DEG_T=leafS_DEG_T, 
+                          leafS_DEG_M=leafS_DEG_M), n=total_genes_tested_leaf) 
+summary(ResultRoot)
+summary(ResultLeaf)
+
+
+plot(ResultRoot, Layout="landscape", degree=2:7, sort.by="size")
+plot(ResultLeaf, Layout="landscape", degree=2:7, sort.by="size")
+
 
 
 #############################################
