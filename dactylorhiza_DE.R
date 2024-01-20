@@ -29,14 +29,17 @@ star_summary_stats$`Percent Multimapped` <- str_remove(star_summary_stats$`Perce
 star_summary_stats$Library<-str_split_fixed(star_summary_stats$Library, "/", 3)[,3]
 
 star_summary_stats %<>% mutate(Tissue=case_when(endsWith(star_summary_stats$Library, "r") == TRUE ~ "Root",
-                                                !endsWith(star_summary_stats$Library, "r") == TRUE ~ "Leaf"))
+                                                !endsWith(star_summary_stats$Library, "r") == TRUE ~ "Leaf")) %>% 
+  mutate(species=case_when(substr(Library,1,1) == "m" ~ "majalis", substr(Library,1,1) == "t" ~ "traunsteineri")) %>%
+  mutate(locality=case_when(substr(Library,3,3) == "S" ~ "St Ulrich", substr(Library,3,3) == "K" ~ "Kitzbuhl")) 
+
+  
+star_summary_stats %>% summary()
 
 write.xlsx(star_summary_stats, file = "Table_S2_read_mapping_summary.xlsx")
 
-star_summary_stats%>% filter(Tissue == "Leaf") %>% summary()
-star_summary_stats%>% filter(Tissue == "Root") %>% summary()
 
-
+aggregate(`Uniquely Mapped` ~ locality, data = star_summary_stats, mean)
 
 
 #############################################################################
@@ -464,9 +467,13 @@ ResultLeaf=supertest(list(leafK_DEG_M=leafK_DEG_M,
 summary(ResultRoot)
 summary(ResultLeaf)
 
-
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Supplemetary_FigX.png", width = 1000, height = 1000)
 plot(ResultRoot, Layout="landscape", degree=2:7, sort.by="size")
+dev.off()
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Supplemetary_FigX.png", width = 1000, height = 1000)
 plot(ResultLeaf, Layout="landscape", degree=2:7, sort.by="size")
+dev.off()
 
 
 
@@ -478,7 +485,8 @@ plot(ResultLeaf, Layout="landscape", degree=2:7, sort.by="size")
 godb_table<-toTable(GOTERM)
 
 # make an empty data frame to add info to
-constitutive_annotation<-data.frame(Term=c(),
+constitutive_annotation<-data.frame(go_id=c(),
+                                    Term=c(),
                                     Ontology=c(),
                                     expression_pattern=c(),
                                     gene_id=c(),
@@ -500,7 +508,7 @@ for (i in 1:nrow(all_bound_constitutive)){
   if (length(go_ids) >=1){
     go<-godb_table[godb_table$go_id %in% go_ids,]
     go<-godb_table[godb_table$go_id %in% go_ids,]
-    new_rows<-data.frame(go[,c("Term", "Ontology")] %>% unique())
+    new_rows<-data.frame(go[,c("go_id", "Term", "Ontology")] %>% unique())
     new_rows$expression_pattern=all_bound_constitutive[i,]$pattern
     new_rows$gene_id=gene_name
     new_rows$locality=all_bound_constitutive[i,]$locality
@@ -791,7 +799,7 @@ prepare_go_df<-function(topgo_object){
     dplyr::select(Term, GO.ID, Significant, Annotated, classicFisher, `Rich score`) %>% 
     #filter(classicFisher < 0.05) %>% 
     filter(classicFisher < 0.05 & `Rich score` >= 0.01) %>% 
-    head(10) %>% 
+    head(5) %>% 
     data.frame()
   return(topgo_object)
 }
@@ -854,16 +862,16 @@ root_go_bound_newcol <- root_go_bound %>% mutate(newcol="placeholder", tissue="R
 
 a<-ggplot(leaf_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 60), 
+  theme(text = element_text(size = 80), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 49),
-        strip.text.x = element_text(size = 53),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60),
         legend.text=element_text(size=36),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines")) + 
-  scale_size_continuous(range = c(9, 18)) + 
+  scale_size_continuous(range = c(12, 30)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
   scale_color_manual(values=c("blue", "red")) +
   theme(legend.position = "none")
@@ -873,18 +881,26 @@ a<-ggplot(leaf_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`R
 root_go_bound_newcol$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
 
 
+root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress",]$Term = "+ve reg. transcription from RNApolII in response to heat stress"
+root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to stress",]$Term = "+ve reg. transcription from RNApolII in response to stress"
+root_go_bound_newcol[root_go_bound_newcol$Term == "regulation of DNA-templated transcription in response to stress",]$Term = "reg. transcription from RNApolII in response to stress"
+root_go_bound_newcol[root_go_bound_newcol$Term == "regulation of transcription from RNA polymerase II promoter in response to stress",]$Term = "reg. of transcription from RNApolII promoter in response to stress"
+
+regulation of transcription from RNA polymerase II promoter in response to stress
+
+
 b<-ggplot(root_go_bound_newcol, aes(x=newcol, y=Term, color = Direction, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(comparison), scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 60), 
+  theme(text = element_text(size = 80), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 49),
-        strip.text.x = element_text(size = 53),
+        strip.text.y = element_text(size = 60),
+        strip.text.x = element_text(size = 60),
         legend.text=element_text(size=36),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines")) + 
-  scale_size_continuous(range = c(9, 18)) + 
+  scale_size_continuous(range = c(12, 30)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
   scale_color_manual(values=c("blue", "red")) +
   scale_y_discrete(position = "right") +
@@ -897,7 +913,14 @@ dev.off()
 
 
 
-library(pheatmap)
+#library(GSEABase)
+#fl <- system.file("extdata", "goslim_plant.obo", package="GSEABase")
+#äslim <- getOBOCollection(fl)
+#myIDs<-transplant_majalis_kitzbuhl_root_up$GO.ID
+#myCollection <- GOCollection(myIDs)
+#goSlim(myCollection, slim, "MF")
+
+
 
 
 orthologs<-read.table("/Users/katieemelianova/Desktop/Diospyros/Orthogroups.GeneCount.tsv", header=TRUE, col.names = c("impolita", "sandwicensis", "yahouensis", "total"))
