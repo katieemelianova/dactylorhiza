@@ -942,12 +942,11 @@ root_go_bound_newcol <- root_go_bound %>% mutate(newcol="placeholder", tissue="R
 # I had to shorten the name of one of the facet grids (D.t. Kitz due to soace
 # this alphabetically rearranges the orderr so locking in order of localitoies this way
 #root_go_bound_newcol$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
-root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress",]$Term = "+ve reg. of transcription from RNApolII promoter in response to heat stress"
-root_go_bound_newcol[root_go_bound_newcol$Term == "regulation of transcription from RNA polymerase II promoter in response to stress" ,]$Term = "reg. of transcription from RNApolII promoter in response to stress" 
+root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress",]$Term <- "+ve reg. transcription from RNApolII prmtr in response to heat stress"
+root_go_bound_newcol[root_go_bound_newcol$Term == "regulation of transcription from RNA polymerase II promoter in response to stress",]$Term <- "reg. transcription from RNApolII promoter in response to stress"
+leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "peptidyl-diphthamide biosynthetic process from peptidyl-histidine",]$Term <- "peptidyl-diphthamide biosyn. proc. from peptidyl-histidine"
 
-
-
-
+leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "negative regulation of phosphoprotein phosphatase activity",]$Term <- "-ve regulation of phosphoprotein phosphatase activity"
 
 
 leaf_go_bound_newcol$Term <- leaf_go_bound_newcol$Term %>% as.character() %>% make.unique(sep = " ")
@@ -967,7 +966,7 @@ root_go_bound_newcol_order <- root_go_bound_newcol %>%
 
 a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, shape=Locality, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(Direction), scales="free_y", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 65), 
+  theme(text = element_text(size = 71), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
@@ -994,7 +993,7 @@ a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, sha
 
 b<-ggplot(root_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, shape=Locality, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(Direction), scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 65), 
+  theme(text = element_text(size = 71), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
@@ -1013,322 +1012,11 @@ b<-ggplot(root_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, sha
   guides(colour = guide_legend(override.aes = list(size = 29)),
          shape = guide_legend(override.aes = list(size = 29)))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5.png", height=2800, width=4200)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=2800, width=4200)
 egg::ggarrange(a, b, ncol=2)
 dev.off()
 
 
-
-
-
-########################################################
-#      plot heatmaps of reciprocally plastic genes     #
-########################################################
-
-st_ulrich_root_effect_of_environment<-specify_comparison(root_samples, df_counts_root, 'locality == "St Ulrich"') %>% run_diffexp("environment", df_root$lengths)
-kitzbuhl_root_effect_of_environment<-specify_comparison(root_samples, df_counts_root, 'locality == "Kitzbuhl"') %>% run_diffexp("environment", df_root$lengths)
-st_ulrich_leaf_effect_of_environment<-specify_comparison(leaf_samples, df_counts_leaf, 'locality == "St Ulrich"') %>% run_diffexp("environment", df_leaf$lengths)
-kitzbuhl_leaf_effect_of_environment<-specify_comparison(leaf_samples, df_counts_leaf, 'locality == "Kitzbuhl"') %>% run_diffexp("environment", df_leaf$lengths)
-
-normalise_data_for_heatmap<-function(dds){
-  de_genes<-dds %>% results() %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.0005) %>% rownames() 
-  gene_counts<-counts(dds, normalized=TRUE)
-  de_gene_counts<-gene_counts[de_genes,]
-  new_column_order<-de_gene_counts %>% colnames %>% sort()
-  de_gene_counts <- de_gene_counts %>% data.frame() %>% dplyr::select(new_column_order)
-  heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/mean(x)))
-  #heatmap_data <- t(apply(de_gene_counts, 1, function(x) x/sd(x)))
-  # log normalise, remove NAs
-  heatmap_data <- log2(heatmap_data)
-  # get data range for breaks
-  max_data <- max(heatmap_data, na.rm = TRUE)
-  min_data <- -min(heatmap_data, na.rm = TRUE)
-  range <- min(max_data, min_data)
-  heatmap_data[is.infinite(heatmap_data)] <- NA
-  heatmap_data[is.nan(heatmap_data)] <- NA
-  heatmap_data %<>% data.frame() %>% drop_na()
-  return(heatmap_data)
-}
-
-st_ulrich_root_effect_of_environment_heatmap<-normalise_data_for_heatmap(st_ulrich_root_effect_of_environment$dds)
-kitzbuhl_root_effect_of_environment_heatmap<-normalise_data_for_heatmap(kitzbuhl_root_effect_of_environment$dds)
-st_ulrich_leaf_effect_of_environment_heatmap<-normalise_data_for_heatmap(st_ulrich_leaf_effect_of_environment$dds)
-kitzbuhl_leaf_effect_of_environment_heatmap<-normalise_data_for_heatmap(kitzbuhl_leaf_effect_of_environment$dds)
-
-
-
-# theres an "r" on the end of the root samples so need to remove these to be able to rbind by column with leaf
-colnames(st_ulrich_root_effect_of_environment_heatmap) %<>% str_remove("r")
-colnames(kitzbuhl_root_effect_of_environment_heatmap) %<>% str_remove("r")
-
-
-# creatig the grouping to enable me to make the annotation DF for the grouped heatmap
-st_ulrich_leaf_effect_of_environment_heatmap %<>% mutate(grouping="Leaf")
-st_ulrich_root_effect_of_environment_heatmap %<>% mutate(grouping="Root")
-kitzbuhl_leaf_effect_of_environment_heatmap %<>% mutate(grouping="Leaf")
-kitzbuhl_root_effect_of_environment_heatmap %<>% mutate(grouping="Root")
-
-# make stUlrich annotation
-st_ulrich_annotation<-data.frame(c(st_ulrich_leaf_effect_of_environment_heatmap$grouping, 
-                                   st_ulrich_root_effect_of_environment_heatmap$grouping))
-
-colnames(st_ulrich_annotation) <-"Tissue"
-# use make.names to rename duplicate genes and not break data.frame function
-rownames(st_ulrich_annotation) <- 
-  make.names(c(rownames(st_ulrich_leaf_effect_of_environment_heatmap),
-               rownames(st_ulrich_root_effect_of_environment_heatmap)), 
-             unique = TRUE)
-
-
-# make Kitzbuhl annotation
-kitzbuhl_annotation<-data.frame(c(kitzbuhl_leaf_effect_of_environment_heatmap$grouping, 
-                                   kitzbuhl_root_effect_of_environment_heatmap$grouping))
-
-colnames(kitzbuhl_annotation) <-"Tissue"
-# use make.names to rename duplicate genes and not break data.frame function
-rownames(kitzbuhl_annotation) <- 
-  make.names(c(rownames(kitzbuhl_leaf_effect_of_environment_heatmap), 
-               rownames(kitzbuhl_root_effect_of_environment_heatmap)), 
-             unique = TRUE)
-
-# remove the grouping column you made to get the annotation dataframe
-st_ulrich_leaf_effect_of_environment_heatmap %<>% dplyr::select(-grouping) %>% set_rownames(st_ulrich_annotation %>% filter(Tissue == "Leaf") %>% rownames())
-st_ulrich_root_effect_of_environment_heatmap %<>% dplyr::select(-grouping) %>% set_rownames(st_ulrich_annotation %>% filter(Tissue == "Root") %>% rownames())
-kitzbuhl_leaf_effect_of_environment_heatmap  %<>% dplyr::select(-grouping) %>% set_rownames(kitzbuhl_annotation %>% filter(Tissue == "Leaf") %>% rownames())
-kitzbuhl_root_effect_of_environment_heatmap  %<>% dplyr::select(-grouping) %>% set_rownames(kitzbuhl_annotation %>% filter(Tissue == "Root") %>% rownames())
-
-
-st_ulrich_effect_of_environment_heatmap<-rbind(st_ulrich_leaf_effect_of_environment_heatmap, st_ulrich_root_effect_of_environment_heatmap)
-kitzbuhl_effect_of_environment_heatmap<-rbind(kitzbuhl_leaf_effect_of_environment_heatmap, kitzbuhl_root_effect_of_environment_heatmap)
-
-stulrich_annotation_col = data.frame(Species = c(rep("D. majalis", 7), rep("D. traunsteineri", 7)), Environment=c(rep("M", 4), rep("T", 3), rep("M", 4), rep("T", 3)))
-kitzbuhl_annotation_col = data.frame(Species = c(rep("D. majalis", 10), rep("D. traunsteineri", 9)), Environment=c(rep("M", 5), rep("T", 5), rep("M", 5), rep("T", 4)))
-
-
-rownames(stulrich_annotation_col)<-st_ulrich_effect_of_environment_heatmap %>% colnames()  
-rownames(kitzbuhl_annotation_col)<-kitzbuhl_effect_of_environment_heatmap %>% colnames()  
-
-# define colours of annotation to be used
-ann_colors = list(Environment = c(M="deepskyblue", T="goldenrod1"),
-                  Species = c(`D. majalis`="lightpink", `D. traunsteineri`="lightgreen"))
-
-nrow(st_ulrich_annotation)
-nrow(kitzbuhl_annotation)
-kitzbuhl_annotation$Tissue %>% table()
-st_ulrich_annotation$Tissue %>% table()
-
-
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure7a.png", height=2000, width=2300)
-pheatmap.type(Data=st_ulrich_effect_of_environment_heatmap, 
-              annRow=st_ulrich_annotation, 
-              show_rownames=FALSE,
-              cluster_cols=FALSE,
-              treeheight_row = 0, treeheight_col = 0,
-              show_colnames = F, scale="none",
-              border_color = NA,
-              annotation_col=stulrich_annotation_col,
-              annotation_colors=ann_colors,
-              annotation_names_row=F,
-              annotation_names_col=F,
-              fontsize = 45,
-              legend=FALSE,
-              gaps_row=c(19),
-              gaps_col=c(4,8,12))
-dev.off()
-
-
-
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure7b.png", height=2000, width=2300)
-pheatmap.type(Data=kitzbuhl_effect_of_environment_heatmap, 
-              annRow=kitzbuhl_annotation, 
-              show_rownames=FALSE,
-              cluster_cols=FALSE,
-              treeheight_row = 0, treeheight_col = 0,
-              show_colnames = F, scale="none",
-              border_color = NA,
-              annotation_col=kitzbuhl_annotation_col,
-              annotation_colors=ann_colors,
-              annotation_names_row=F,
-              annotation_names_col=F,
-              fontsize = 45,
-              legend=FALSE,
-              gaps_row=c(6),
-              gaps_col=c(5,10,15))
-dev.off()
-
-
-
-
-#######################################################################################################
-#      Figure 9 plot venn diagram of effect of transplant (both species) and shared plastic genes     #
-#######################################################################################################
-
-
-shared_plastic_stulrich<-st_ulrich_effect_of_environment_heatmap %>% rownames()
-shared_plastic_kitzbuhl<-kitzbuhl_effect_of_environment_heatmap %>% rownames()
-
-stulrich_transplant_genes<-c(get_significant_genes(transplant_traunsteineri_stulrich_leaf),
-                             get_significant_genes(transplant_traunsteineri_stulrich_root),
-                             get_significant_genes(transplant_majalis_stulrich_leaf),
-                             get_significant_genes(transplant_majalis_stulrich_root)) %>% unique()
-
-kitzbuhl_transplant_genes<-c(get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf),
-                             get_significant_genes(transplant_traunsteineri_kitzbuhl_root),
-                             get_significant_genes(transplant_majalis_kitzbuhl_leaf),
-                             get_significant_genes(transplant_majalis_kitzbuhl_root)) %>% unique()
-
-
-
-length(kitzbuhl_transplant_genes)
-kitzbuhl_effect_of_environment_heatmap %>% rownames() %>% length()
-intersect(kitzbuhl_transplant_genes, kitzbuhl_effect_of_environment_heatmap %>% rownames()) %>% length()
-
-length(stulrich_transplant_genes)
-st_ulrich_effect_of_environment_heatmap %>% rownames() %>% length()
-intersect(stulrich_transplant_genes, st_ulrich_effect_of_environment_heatmap %>% rownames()) %>% length()
-
-
-
-stu_intersect_euler <- intersect(stulrich_transplant_genes, shared_plastic_stulrich) %>% length()
-stu_trans_euler <- (stulrich_transplant_genes %>% length()) - stu_intersect_euler
-stu_plastic_euler <- (shared_plastic_stulrich %>% length()) - stu_intersect_euler
-
-ktz_intersect_euler <- intersect(kitzbuhl_transplant_genes, shared_plastic_kitzbuhl) %>% length()
-ktz_trans_euler <- (kitzbuhl_transplant_genes %>% length()) - ktz_intersect_euler
-ktz_plastic_euler <- (shared_plastic_kitzbuhl %>% length()) - ktz_intersect_euler
-
-
-set.seed(1)
-stulrich_euler <- c("St Ulrich transplant" = stu_trans_euler,
-                    "St Ulrich shared plastic" = stu_plastic_euler, 
-                    "St Ulrich transplant&St Ulrich shared plastic" = stu_intersect_euler)
-
-kitzbuhl_euler <- c("Kitzbuhl transplant" = ktz_trans_euler,
-                    "Kitzbuhl shared plastic" = ktz_plastic_euler, 
-                    "Kitzbuhl transplant&Kitzbuhl shared plastic"  = ktz_intersect_euler)
-
-
-
-p1 <- plot(euler(stulrich_euler), 
-           #quantities = TRUE,
-           fills = c("maroon2", "tan1"),
-           quantities = list(cex = 4),
-           legend=list(fontsize=28))
-
-p2 <- plot(euler(kitzbuhl_euler), 
-           #quantities = TRUE,
-           quantities = list(cex = 4),
-           fills = c("seagreen3", "dodgerblue"), 
-           legend=list(fontsize=28))
-
-png(file="Figure8.png", width = 1200, height = 1200)
-gridExtra::grid.arrange(p1, p2)
-dev.off()
-
-
-
-one<-transplant_traunsteineri_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-two<-transplant_traunsteineri_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-three<-transplant_traunsteineri_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-four<-transplant_traunsteineri_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-
-five<-transplant_majalis_stulrich_leaf_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-six<-transplant_majalis_stulrich_leaf_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-seven<-transplant_majalis_stulrich_root_up %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-eight<-transplant_majalis_stulrich_root_down %>% filter(as.numeric(classicFisher) < 0.05) %>% dplyr::select(GO.ID) %>% pull()
-
-
-intersect(test_go, c(one, two, three, four, five, six, seven, eight)) %>% length()
-
-test_go %>% length()
-
-####### getting annotations of the plastic reciprocal genes
-
-gene_to_go_table<-function(genes){
-  go_id_list<-c()
-  for (gene in genes){
-    go_ids<-mp[gene]
-    if (length(go_ids) >=1){
-      go_id_list <-c(go_id_list, go_ids[[1]])
-    }
-  }
-  go_id_list<-unique(go_id_list)
-  return(go_id_list)
-}
-
-st_ulrich_leaf_effect_of_environment_go<-st_ulrich_leaf_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
-st_ulrich_root_effect_of_environment_go<-st_ulrich_root_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
-kitzbuhl_leaf_effect_of_environment_go<-kitzbuhl_leaf_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
-kitzbuhl_root_effect_of_environment_go<-kitzbuhl_root_effect_of_environment_heatmap %>% rownames() %>% gene_to_go_table()
-
-
-
-
-transplant_majalis_kitzbuhl_leaf_genes<-get_significant_genes(transplant_majalis_kitzbuhl_leaf)
-transplant_majalis_stulrich_leaf_genes<-get_significant_genes(transplant_majalis_stulrich_leaf)
-transplant_traunsteineri_kitzbuhl_leaf_genes<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf)
-transplant_traunsteineri_stulrich_leaf_genes<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
-
-
-st_ulrich_leaf_effect_of_environment_genes<-get_significant_genes(st_ulrich_leaf_effect_of_environment)
-st_ulrich_root_effect_of_environment_genes<-get_significant_genes(st_ulrich_root_effect_of_environment)
-kitzbuhl_leaf_effect_of_environment_genes<-get_significant_genes(kitzbuhl_leaf_effect_of_environment)
-kitzbuhl_root_effect_of_environment_genes<-get_significant_genes(kitzbuhl_root_effect_of_environment)
-
-
-
-
-listInputKitzbuhl<-list(transplant_majalis_kitzbuhl_leaf_genes=transplant_majalis_kitzbuhl_leaf_genes,
-                transplant_traunsteineri_kitzbuhl_leaf_genes=transplant_traunsteineri_kitzbuhl_leaf_genes,
-                kitzbuhl_leaf_effect_of_environment_genes=kitzbuhl_leaf_effect_of_environment_genes,
-                kitzbuhl_root_effect_of_environment_genes=kitzbuhl_root_effect_of_environment_genes)
-
-listInputStUlrich<-list(
-                        transplant_majalis_stulrich_leaf_genes=transplant_majalis_stulrich_leaf_genes,
-                        transplant_traunsteineri_stulrich_leaf_genes=transplant_traunsteineri_stulrich_leaf_genes,
-                        st_ulrich_leaf_effect_of_environment_genes=st_ulrich_leaf_effect_of_environment_genes,
-                        st_ulrich_root_effect_of_environment_genes=st_ulrich_root_effect_of_environment_genes)
-
-listInputAll<-list(transplant_majalis_kitzbuhl_leaf_genes=transplant_majalis_kitzbuhl_leaf_genes,
-                        transplant_majalis_stulrich_leaf_genes=transplant_majalis_stulrich_leaf_genes,
-                        transplant_traunsteineri_kitzbuhl_leaf_genes=transplant_traunsteineri_kitzbuhl_leaf_genes,
-                        transplant_traunsteineri_stulrich_leaf_genes=transplant_traunsteineri_stulrich_leaf_genes,
-                        st_ulrich_leaf_effect_of_environment_genes=st_ulrich_leaf_effect_of_environment_genes,
-                        st_ulrich_root_effect_of_environment_genes=st_ulrich_root_effect_of_environment_genes,
-                        kitzbuhl_leaf_effect_of_environment_genes=kitzbuhl_leaf_effect_of_environment_genes,
-                        kitzbuhl_root_effect_of_environment_genes=kitzbuhl_root_effect_of_environment_genes)
-
-
-st_ulrich_leaf_effect_of_environment_go
-st_ulrich_root_effect_of_environment_go
-kitzbuhl_leaf_effect_of_environment_go
-kitzbuhl_root_effect_of_environment_go
-  
-listInputGO<-list(st_ulrich_leaf_effect_of_environment_go=st_ulrich_leaf_effect_of_environment_go,
-                  st_ulrich_root_effect_of_environment_go=st_ulrich_root_effect_of_environment_go,
-                  kitzbuhl_leaf_effect_of_environment_go=kitzbuhl_leaf_effect_of_environment_go,
-                  kitzbuhl_root_effect_of_environment_go=kitzbuhl_root_effect_of_environment_go)
-
-  
-
-
-upset(fromList(listInputAll), order.by = "freq", nsets = 10)
-
-
-
-stu_root<-st_ulrich_root_effect_of_environment$results %>% 
-  data.frame() %>% 
-  dplyr::select(log2FoldChange, padj) %>% 
-  rownames_to_column(var="gene_id") %>%
-  mutate("locality" = "stulrich")
-
-kitz_root<-kitzbuhl_root_effect_of_environment$results %>% 
-  data.frame() %>% 
-  dplyr::select(log2FoldChange, padj) %>% 
-  rownames_to_column(var="gene_id") %>%
-  mutate("locality" = "kitzzbul")
-
-all_env<-rbind(stu_root, kitz_root)
 
 
 
