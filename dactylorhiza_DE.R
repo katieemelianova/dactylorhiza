@@ -24,6 +24,8 @@ source("dactylorhiza_functions.R")
 #       make supplementary table of read count stats       #
 ############################################################
 
+# the file here is generated throughb a simple script found in /scratch/botany/katie/orchid/collate_mapping_stats.sh
+
 star_summary_stats<-read.table("rna_seq_summary_statistics.txt") %>% set_colnames(c("Library", "Input Reads", "Uniquely Mapped", "Percent Multimapped"))
 colnames(star_summary_stats)
 star_summary_stats$Library<-str_remove(star_summary_stats$Library, "Log.final.out")
@@ -38,7 +40,7 @@ star_summary_stats %<>% mutate(Tissue=case_when(endsWith(star_summary_stats$Libr
   
 star_summary_stats %>% summary()
 
-write.xlsx(star_summary_stats, file = "Table_S2_read_mapping_summary.xlsx")
+write.xlsx(star_summary_stats, file = "SupplementaryTable1_read_mapping_summary.xlsx")
 
 
 aggregate(`Uniquely Mapped` ~ locality, data = star_summary_stats, mean)
@@ -116,9 +118,23 @@ root_samples<-read.table("Root_samples.txt", header=FALSE, col.names = c("sample
 #################################################################
 #    specify samples to exclude from sample design and counts   #
 #################################################################
-samples_to_exclude<-c("mTS2", "mTS2r", 
-                      "tTS4", "tTS4r",
-                      "tTK1", "tTK1r")
+
+
+samples_to_exclude_leaf<-c("mTS2", 
+                      "tTS4",
+                      "tTK1",
+                      "mTK1",
+                      "tMK4",
+                      "tMS4",
+                      "tTK3")
+
+samples_to_exclude_root<-c("mTS2r", 
+                           "tTS4r",
+                           "tTK1r",
+                           "mTK2r", 
+                           "tMK4r")
+
+
 
 ###########################################################
 #          annotate samples using above function          #
@@ -126,8 +142,8 @@ samples_to_exclude<-c("mTS2", "mTS2r",
 leaf_samples<-annotate_samples(leaf_samples)
 root_samples<-annotate_samples(root_samples)
 
-leaf_samples <- leaf_samples[!(row.names(leaf_samples) %in% samples_to_exclude),]
-root_samples <- root_samples[!(row.names(root_samples) %in% samples_to_exclude),]
+leaf_samples <- leaf_samples[!(row.names(leaf_samples) %in% samples_to_exclude_leaf),]
+root_samples <- root_samples[!(row.names(root_samples) %in% samples_to_exclude_root),]
 
 
 ####################################################################################################
@@ -136,13 +152,13 @@ root_samples <- root_samples[!(row.names(root_samples) %in% samples_to_exclude),
 
 strings_to_remove_root<-c("root_samples/", "Aligned.sortedByCoord.out.bam")
 df_root<-read_in_featurecounts('dactylorhiza_root_featurecounts', strings_to_remove_root)
-df_root$counts %<>% dplyr::select(-contains(samples_to_exclude))
+df_root$counts %<>% dplyr::select(-contains(samples_to_exclude_root))
 df_counts_root<-df_root$counts
 df_lengths_root<-df_root$lengths
 
 strings_to_remove_leaf<-c("StUlrich/", "Kitzbuhel/", "Aligned.sortedByCoord.out.bam")
 df_leaf<-read_in_featurecounts('dactylorhiza_leaf_featurecounts', strings_to_remove_leaf)
-df_leaf$counts %<>% dplyr::select(-contains(samples_to_exclude))
+df_leaf$counts %<>% dplyr::select(-contains(samples_to_exclude_leaf))
 df_counts_leaf<-df_leaf$counts
 df_lengths_leaf<-df_leaf$lengths
 
@@ -152,38 +168,61 @@ df_lengths_leaf<-df_leaf$lengths
 ######################################
 
 # make a dds object from the total root samples (no subsetting)
-root_dds<-specify_comparison(root_samples, df_counts_root, "1 == 1")
-root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
-                                   colData = root_dds[["samples"]],
-                                   design = ~ species + locality)
+root_kitzbuhel_dds<-specify_comparison(root_samples, df_counts_root, "locality == 'Kitzbuhl'")
+root_stulrich_dds<-specify_comparison(root_samples, df_counts_root, "locality == 'St Ulrich'")
+
+
+root_kitzbuhel_dds <- DESeqDataSetFromMatrix(countData = root_kitzbuhel_dds[["counts"]],
+                                   colData = root_kitzbuhel_dds[["samples"]],
+                                   design = ~ species + treatment)
+
+root_stulrich_dds <- DESeqDataSetFromMatrix(countData = root_stulrich_dds[["counts"]],
+                                             colData = root_stulrich_dds[["samples"]],
+                                             design = ~ species + treatment)
+
+
 
 # make a dds object from the total leaf samples (no subsetting)
-leaf_dds<-specify_comparison(leaf_samples, df_counts_leaf, "1 == 1")
-leaf_dds <- DESeqDataSetFromMatrix(countData = leaf_dds[["counts"]],
-                                   colData = leaf_dds[["samples"]],
-                                   design = ~ species + locality)
+leaf_kitzbuhel_dds<-specify_comparison(leaf_samples, df_counts_leaf, "locality == 'Kitzbuhl'")
+leaf_stulrich_dds<-specify_comparison(leaf_samples, df_counts_leaf, "locality == 'St Ulrich'")
+
+leaf_kitzbuhel_dds <- DESeqDataSetFromMatrix(countData = leaf_kitzbuhel_dds[["counts"]],
+                                   colData = leaf_kitzbuhel_dds[["samples"]],
+                                   design = ~ species + treatment)
+
+leaf_stulrich_dds <- DESeqDataSetFromMatrix(countData = leaf_stulrich_dds[["counts"]],
+                                   colData = leaf_stulrich_dds[["samples"]],
+                                   design = ~ species + treatment)
 
 
 # perform variance stabilizig transformation
-root_vst<-varianceStabilizingTransformation(root_dds)
-leaf_vst<-varianceStabilizingTransformation(leaf_dds)
+root_kitzbuhel_vst<-varianceStabilizingTransformation(root_kitzbuhel_dds)
+root_stulrich_vst<-varianceStabilizingTransformation(root_stulrich_dds)
+leaf_kitzbuhel_vst<-varianceStabilizingTransformation(leaf_kitzbuhel_dds)
+leaf_stulrich_vst<-varianceStabilizingTransformation(leaf_stulrich_dds)
 
-# remove outlier sample
-root_vst<-root_vst[,-c(28)]
 
 # plot the PCA 
-pcaRootData <-plotPCA(root_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
-percentRootVar <- round(100 * attr(pcaRootData, "percentVar"))
+pcaRootKitzbuhelData <-plotPCA(root_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+percentRootKitzbuhelVar <- round(100 * attr(pcaRootKitzbuhelData, "percentVar"))
+pcaRootStUlrichData <-plotPCA(root_stulrich_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+percentRootStUlrichVar <- round(100 * attr(pcaRootStUlrichData, "percentVar"))
 
-pcaLeafData <-plotPCA(leaf_vst, intgroup=c("treatment", "species", "locality"), ntop = 1000, returnData = TRUE)
-percentLeafVar <- round(100 * attr(pcaLeafData, "percentVar"))
+pcaLeafKitzbuhelData <-plotPCA(leaf_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+percentLeafKitzbuhelVar <- round(100 * attr(pcaLeafKitzbuhelData, "percentVar"))
+pcaLeafStUlrichData <-plotPCA(leaf_stulrich_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+percentLeafStUlrichVar <- round(100 * attr(pcaLeafStUlrichData, "percentVar"))
 
-pcaRootData %<>% mutate("Tissue" = "Root")
-pcaLeafData %<>% mutate("Tissue" = "Leaf")
-pcaData <- rbind(pcaRootData, pcaLeafData)
+pcaRootKitzbuhelData %<>% mutate("Tissue" = "Root", "Locality" = "Kitzbuhel")
+pcaRootStUlrichData %<>% mutate("Tissue" = "Root", "Locality" = "St Ulrich")
 
-pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=locality, fill=locality, shape=interaction(species, treatment))) +
-  geom_point(size=10, stroke = 1.5) +
+pcaLeafKitzbuhelData %<>% mutate("Tissue" = "Leaf", "Locality" = "Kitzbuhel")
+pcaLeafStUlrichData %<>% mutate("Tissue" = "Leaf", "Locality" = "St Ulrich")
+
+pcaData <- rbind(pcaRootKitzbuhelData, pcaRootStUlrichData, pcaLeafKitzbuhelData, pcaLeafStUlrichData)
+
+pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=Locality, fill=Locality, shape=interaction(species, treatment))) +
+  geom_point(size=15, stroke = 1.5) +
   #xlab(paste0("PC1: ",percentRootVar[1],"% variance")) +
   #ylab(paste0("PC2: ",percentRootVar[2],"% variance")) + 
   #coord_fixed() + 
@@ -192,19 +231,23 @@ pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=locality, fill=locality, shape=int
         legend.text=element_text(size=35),
         axis.text=element_text(size=45),
         axis.title=element_text(size=45),
-        plot.margin = unit(c(0,0,0,0), "cm"),
-        strip.text.x = element_text(size = 45),) +
+        plot.margin = unit(c(1,1,1,1), "cm"),
+        strip.text.x = element_text(size = 45)) +
   scale_shape_manual(labels=c("D. majalis native", "D. traunstaineri native", "D. majalis transplant", "D. traunstaineri transplant"), values = c(16, 15, 10, 7)) +
-  facet_wrap(~ Tissue, ncol=2)
+  facet_wrap(~ Tissue + Locality, ncol=2)
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 2000, height = 900)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 2000, height = 1600)
 pca_plot
 dev.off()
 
-percentRootVar[1]
-percentRootVar[2]
-percentLeafVar[1]
-percentLeafVar[2]
+percentRootKitzbuhelVar[1]
+percentRootKitzbuhelVar[2]
+percentRootStUlrichVar[1]
+percentRootStUlrichVar[2]
+percentLeafKitzbuhelVar[1]
+percentLeafKitzbuhelVar[2]
+percentLeafStUlrichVar[1]
+percentLeafStUlrichVar[2]
 
 ###############################################################
 #      Count how many genes are expressed total per tissue    #
@@ -270,8 +313,8 @@ traunsteineri_majalis_leaf_T_stulrich<-specify_comparison(leaf_samples, df_count
 #    Figure 3 Plotting constitutively DEGs   #
 ##############################################
 
-pvalue_threshold <- 0.05
-logfc_threshold<-2
+#pvalue_threshold <- 0.05
+#logfc_threshold<-1.5
 
 tmM_stu_root<-traunsteineri_majalis_root_M_stulrich$results %>% 
   data.frame() %>% 
@@ -346,11 +389,7 @@ all_bound<-rbind(stu_root,
 all_bound %<>% mutate(status=case_when(majalis_env_padj < 0.05 &
                                          traunst_env_padj < 0.05 ~ "Constitutively DE",
                                          majalis_env_padj < 0.05 &
-                                         #(majalis_env > 2 | majalis_env < -2) &
-                                         #(traunst_env < 2 | traunst_env > -2) &
                                          traunst_env_padj > 0.05 ~ "DE in D. majalis environment only",
-                                         #(majalis_env < 2 | majalis_env > -2) &
-                                         #(traunst_env > 2 | traunst_env < -2) &
                                          majalis_env_padj > 0.05 &
                                          traunst_env_padj < 0.05 ~ "DE in D. traunsteineri environment only"))
 
@@ -450,6 +489,7 @@ de_constitutive_leaf_GO_df <- de_constitutive_leaf_GO %>% prepare_go_df() %>% mu
 de_constitutive_root_GO_df<- de_constitutive_root_GO %>% prepare_go_df() %>% mutate(Environment="Constitutively DE", tissue="Root", placeholder="placeholder")
 
 root_go_bound <- rbind(de_majalis_only_root_GO_df, de_traunsteineri_only_root_GO_df, de_constitutive_root_GO_df)
+root_go_bound$Term[root_go_bound$Term == "regulation of transcription from RNA polymerase II promoter in response to stress"] <- "reg of transcription from RNApolII promoter in resp. to stress"
 leaf_go_bound <- rbind(de_majalis_only_leaf_GO_df, de_traunsteineri_only_leaf_GO_df, de_constitutive_leaf_GO_df)
 
 #root_go_bound[root_go_bound$Term == "regulation of transcription from RNA polymerase II promoter in response to stress",]$Term = "reg. of transcription from RNApolII promoter in response to stress"
@@ -459,6 +499,9 @@ root_go_bound %<>% mutate(Term = fct_reorder(Term, Environment))
 # update duplicated value so it doesnt cause problems in factor redordering
 leaf_go_bound[leaf_go_bound$Term == "sodium ion import across plasma membrane" & leaf_go_bound$Environment == "Constitutively DE",]$Term <- "sodium ion import across plasma membrane "
 leaf_go_bound %<>% mutate(Term = fct_reorder(Term, Environment))
+
+
+
 
 a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", switch = "y", cols=vars(tissue)) + 
@@ -470,13 +513,14 @@ a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Ri
         strip.text.x = element_text(size = 70),
         legend.text=element_text(size=40),
         legend.title=element_text(size=40),
-        panel.spacing=unit(1, "lines")) + 
+        panel.spacing=unit(1, "lines"),
+        plot.margin = margin(0, 0, 0, 0, "cm")) + 
   scale_size_continuous(range = c(18, 60)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
   scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
   theme(legend.position = "none") 
 
-b<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
+b <- ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", cols=vars(tissue)) + 
   theme(text = element_text(size = 80), 
         axis.text.x=element_blank(), 
@@ -486,18 +530,34 @@ b<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Ri
         strip.text.x = element_text(size = 70),
         legend.text=element_text(size=60),
         legend.title=element_blank(),
-        panel.spacing=unit(1, "lines")) + 
+        legend.position = "none",
+        panel.spacing=unit(1, "lines"),
+        plot.margin = margin(0, 0, 0, 0, "cm")) + 
   scale_size_continuous(range = c(18, 60)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
   scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
-  scale_y_discrete(position = "right") + 
-  theme(legend.position = c(4.6, 0.56)) 
+  scale_y_discrete(position = "right") 
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2100, width=4200)
-egg::ggarrange(a, b, ncol=2, widths = c(0.49, 0.45))
+
+b_legend<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
+  geom_point() + facet_grid(scales="free", space= "free", cols=vars(tissue)) + 
+  theme(legend.margin=margin(c(0,0,0,0)),
+        legend.text=element_text(size=70),
+        legend.title=element_text(size=70)) + 
+  scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
+  guides(color = guide_legend(override.aes = list(size = 30))) +
+  scale_size_continuous(range = c(18, 60))
+
+
+leg <- cowplot::get_legend(b_legend)
+leg<-as_ggplot(leg)
+
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5500)
+plot_grid(a, b, leg,
+          ncol = 3,
+          rel_widths = c(2, 2, 1.1),
+          rel_heights = c(2, 2, 1.1))
 dev.off()
-
-
 
 
 ######################################################################
