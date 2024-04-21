@@ -291,7 +291,6 @@ length(which(rowSums( counts(root_dds, normalized=TRUE)[,root_stulrich_names] >=
 traunsteineri_majalis_root_M_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 traunsteineri_majalis_root_T_kitzbuhl<-specify_comparison(root_samples, df_counts_root, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_root)
 
-
 # leaf 
 traunsteineri_majalis_leaf_M_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "majalis" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
 traunsteineri_majalis_leaf_T_kitzbuhl<-specify_comparison(leaf_samples, df_counts_leaf, 'environment == "traunsteineri" & locality == "Kitzbuhl"') %>% run_diffexp("species", df_lengths_leaf)
@@ -505,12 +504,12 @@ leaf_go_bound %<>% mutate(Term = fct_reorder(Term, Environment))
 
 a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 80), 
+  theme(text = element_text(size = 90), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 70),
-        strip.text.x = element_text(size = 70),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90),
         legend.text=element_text(size=40),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines"),
@@ -522,12 +521,12 @@ a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Ri
 
 b <- ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 80), 
+  theme(text = element_text(size = 90), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 70),
-        strip.text.x = element_text(size = 70),
+        strip.text.y = element_text(size = 90),
+        strip.text.x = element_text(size = 90),
         legend.text=element_text(size=60),
         legend.title=element_blank(),
         legend.position = "none",
@@ -555,17 +554,13 @@ leg<-as_ggplot(leg)
 png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5500)
 plot_grid(a, b, leg,
           ncol = 3,
-          rel_widths = c(2, 2, 1.1),
-          rel_heights = c(2, 2, 1.1))
+          rel_widths = c(2, 2, 1),
+          rel_heights = c(2, 2, 1))
 dev.off()
-
 
 ######################################################################
 #    Test for whether more constitutively DEGs are found by chance   #
 ######################################################################
-
-
-
 
 rootK_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
 rootK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
@@ -609,15 +604,15 @@ ResultLeaf=supertest(list(leafK_DEG_M=leafK_DEG_M,
                           leafS_DEG_M=leafS_DEG_M), n=total_genes_tested_leaf) 
 
 
-summary(ResultRoot)$Table %>% write.xlsx(file = "SupplementaryTable2_Root_Exact_Test.xlsx")
-summary(ResultLeaf)$Table %>% write.xlsx(file = "SupplementaryTable3_Leaf_Exact_Test.xlsx")
+summary(ResultRoot)$Table %>% dplyr::select(-"Elements") %>% write.xlsx(file = "SupplementaryTable2_Root_Exact_Test.xlsx")
+summary(ResultLeaf)$Table %>% dplyr::select(-"Elements") %>% write.xlsx(file = "SupplementaryTable3_Leaf_Exact_Test.xlsx")
 
 #png(file="~/Desktop/Dactylorhiza/dactylorhiza/Supplemetary_Fig1.png", width = 1000, height = 1000)
-#plot(ResultRoot, Layout="landscape", degree=2:7, sort.by="size")
+plot(ResultRoot, Layout="landscape", degree=2:7, sort.by="size")
 #dev.off()
 #
 #png(file="~/Desktop/Dactylorhiza/dactylorhiza/Supplemetary_Fig2.png", width = 1000, height = 1000)
-#plot(ResultLeaf, Layout="landscape", degree=2:7, sort.by="size")
+plot(ResultLeaf, Layout="landscape", degree=2:7, sort.by="size")
 #dev.off()
 
 
@@ -791,8 +786,8 @@ venn.diagram(
 # mainly so you dont have to repeat the code
 label_expression_direction<-function(results_object){
   results_object %>% data.frame() %>% 
-    mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.05 ~ "upregulated",
-                                   log2FoldChange <= -2 & padj <= 0.05 ~ "downregulated")) %>%
+    mutate(diffexpressed=case_when(log2FoldChange >= 1.5 & padj <= 0.05 ~ "upregulated",
+                                   log2FoldChange <= -1.5 & padj <= 0.05 ~ "downregulated")) %>%
     replace_na(list(diffexpressed = "Not significant"))
 }
 
@@ -806,6 +801,9 @@ tKLeaf<-transplant_traunsteineri_kitzbuhl_leaf$results %>% label_expression_dire
 tSLeaf<-transplant_traunsteineri_stulrich_leaf$results %>% label_expression_direction()
 tKRoot<-transplant_traunsteineri_kitzbuhl_root$results %>% label_expression_direction()
 tSRoot<-transplant_traunsteineri_stulrich_root$results %>% label_expression_direction()
+
+
+
 
 species=c(rep("D. majalis", 4), rep("D traunsteineri", 4))
 tissue=c(rep("Leaf", 2), rep("Root", 2), rep("Leaf", 2), rep("Root", 2))
@@ -836,13 +834,11 @@ de_counts<-data.frame(species=species,
            downregulated=downregulated)
 
 
+
 # make the downregulated values negative for mirrorred barplot
 de_counts$downregulated <- (-de_counts$downregulated)
-
 de_counts %<>% melt()
-
 de_counts$Tissue<-paste(de_counts$Tissue, "Plastic")
-
 colnames(de_counts)<-c("Species", "Tissue", "Locality", "Individual", "Direction", "Number of genes")
 
 png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure5B.png", width = 900, height = 1200)
@@ -866,11 +862,170 @@ ggplot(de_counts, aes(x=Individual, y=`Number of genes`, fill=Direction)) +
                                                          "tSLeaf" = "D. traunsteineri", 
                                                          "tKRoot" = "D. traunsteineri", 
                                                          "tSRoot" = "D. traunsteineri")) +
-  ylim(-400, 500)
+  ylim(-580, 580)
 dev.off()
 
 
 ######**** NB after this I took 5A and 5B figureds and collated them in a pptx to create final composite figure ****##########
+
+
+
+#########################################
+#    Gather all DEGs and make a table   #
+#########################################
+
+
+# plastic genes (within species comparison)
+
+mTK_leaf_degs<-get_significant_genes(transplant_majalis_kitzbuhl_leaf, directional = TRUE)
+mTS_leaf_degs<-get_significant_genes(transplant_majalis_stulrich_leaf, directional = TRUE)
+mTK_root_degs<-get_significant_genes(transplant_majalis_kitzbuhl_root, directional = TRUE)
+mTS_root_degs<-get_significant_genes(transplant_majalis_stulrich_root, directional = TRUE)
+
+
+tMK_leaf_degs<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf, directional = TRUE)
+tMS_leaf_degs<-get_significant_genes(transplant_traunsteineri_stulrich_leaf, directional = TRUE)
+tMK_root_degs<-get_significant_genes(transplant_traunsteineri_kitzbuhl_root, directional = TRUE)
+tMS_root_degs<-get_significant_genes(transplant_traunsteineri_stulrich_root, directional = TRUE)
+
+
+`majalis (M-T Kitzbuhel) leaf up` <- mTK_leaf_degs$up %>% length()
+`majalis (M-T Kitzbuhel) leaf down` <- mTK_leaf_degs$down %>% length()
+`majalis (M-T Kitzbuhel) root up` <- mTK_root_degs$up %>% length()
+`majalis (M-T Kitzbuhel) root down` <- mTK_root_degs$down %>% length()
+`traunsteineri (T-M Kitzbuhel) leaf up` <- tMK_leaf_degs$up %>% length()
+`traunsteineri (T-M Kitzbuhel) leaf down` <- tMK_leaf_degs$down %>% length()
+`traunsteineri (T-M Kitzbuhel) root up` <- tMK_root_degs$up %>% length()
+`traunsteineri (T-M Kitzbuhel) root down` <- tMK_root_degs$down %>% length()
+
+`majalis (M-T St. Ulrich) leaf up` <- mTS_leaf_degs$up %>% length()
+`majalis (M-T St. Ulrich) leaf down` <- mTS_leaf_degs$down %>% length()
+`majalis (M-T St. Ulrich) root up` <- mTS_root_degs$up %>% length()
+`majalis (M-T St. Ulrich) root down` <- mTS_root_degs$down %>% length()
+`traunsteineri (T-M St. Ulrich) leaf up` <- tMS_leaf_degs$up %>% length()
+`traunsteineri (T-M St. Ulrich) leaf down` <- tMS_leaf_degs$down %>% length()
+`traunsteineri (T-M St. Ulrich) root up` <- tMS_root_degs$up %>% length()
+`traunsteineri (T-M St. Ulrich) root down` <- tMS_root_degs$down %>% length()
+
+
+# consitutively differentially expressed genes (between species comparisons)
+
+tmMK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl, directional = TRUE)
+tmTK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl, directional = TRUE)
+tmMK_root_degs<-get_significant_genes(traunsteineri_majalis_root_M_kitzbuhl, directional = TRUE)
+tmTK_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_kitzbuhl, directional = TRUE)
+
+tmMS_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_M_stulrich, directional = TRUE)
+tmTS_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_T_stulrich, directional = TRUE)
+tmMS_root_degs<-get_significant_genes(traunsteineri_majalis_root_M_stulrich, directional = TRUE)
+tmTS_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_stulrich, directional = TRUE)
+
+
+`traunsteineri vs majalis (M Kitzbuhel) leaf up` <- tmMK_leaf_degs$up %>% length()
+`traunsteineri vs majalis (M Kitzbuhel) leaf down` <- tmMK_leaf_degs$down %>% length()
+`traunsteineri vs majalis (T Kitzbuhel) leaf up` <- tmTK_leaf_degs$up %>% length()
+`traunsteineri vs majalis (T Kitzbuhel) leaf down` <- tmTK_leaf_degs$down %>% length()
+`traunsteineri vs majalis (M Kitzbuhel) root up` <- tmMK_root_degs$up %>% length()
+`traunsteineri vs majalis (M Kitzbuhel) root down` <- tmMK_root_degs$down %>% length()
+`traunsteineri vs majalis (T Kitzbuhel) root up` <- tmTK_root_degs$up %>% length()
+`traunsteineri vs majalis (T Kitzbuhel) root down` <- tmTK_root_degs$down %>% length()
+
+`traunsteineri vs majalis (M St. Ulrich) leaf up` <- tmMS_leaf_degs$up %>% length()
+`traunsteineri vs majalis (M St. Ulrich) leaf down` <- tmMS_leaf_degs$down %>% length()
+`traunsteineri vs majalis (T St. Ulrich) leaf up` <- tmTS_leaf_degs$up %>% length()
+`traunsteineri vs majalis (T St. Ulrich) leaf down` <- tmTS_leaf_degs$down %>% length()
+`traunsteineri vs majalis (M St. Ulrich) root up` <- tmMS_root_degs$up %>% length()
+`traunsteineri vs majalis (M St. Ulrich) root down` <- tmMS_root_degs$down %>% length()
+`traunsteineri vs majalis (T St. Ulrich) root up` <- tmTS_root_degs$up %>% length()
+`traunsteineri vs majalis (T St. Ulrich) root down` <- tmTS_root_degs$down %>% length()
+
+
+
+`traunsteineri vs majalis (Kitzbuhel) Leaf Mup Tup` <- intersect(tmMK_leaf_degs$up, tmTK_leaf_degs$up) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Leaf Mdown Tdown` <- intersect(tmMK_leaf_degs$down, tmTK_leaf_degs$down) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Leaf Mup Tdown` <- intersect(tmMK_leaf_degs$up, tmTK_leaf_degs$down) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Leaf Mdown Tup` <- intersect(tmMK_leaf_degs$down, tmTK_leaf_degs$up) %>% length()
+
+`traunsteineri vs majalis (St. Ulrich) Leaf Mup Tup` <- intersect(tmMS_leaf_degs$up, tmTS_leaf_degs$up) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Leaf Mdown Tdown` <- intersect(tmMS_leaf_degs$down, tmTS_leaf_degs$down) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Leaf Mup Tdown` <- intersect(tmMS_leaf_degs$up, tmTS_leaf_degs$down) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Leaf Mdown Tup` <- intersect(tmMS_leaf_degs$down, tmTS_leaf_degs$up) %>% length()
+
+`traunsteineri vs majalis (Kitzbuhel) Root Mup_Tup` <- intersect(tmMK_root_degs$up, tmTK_root_degs$up) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Root Mdown_Tdown` <- intersect(tmMK_root_degs$down, tmTK_root_degs$down) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Root Mup_Tdown` <- intersect(tmMK_root_degs$up, tmTK_root_degs$down) %>% length()
+`traunsteineri vs majalis (Kitzbuhel) Root Mdown_Tup` <- intersect(tmMK_root_degs$down, tmTK_root_degs$up) %>% length()
+
+`traunsteineri vs majalis (St. Ulrich) Root Mup_Tup` <- intersect(tmMS_root_degs$up, tmTS_root_degs$up) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Root Mdown_Tdown` <- intersect(tmMS_root_degs$down, tmTS_root_degs$down) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Root Mup_Tdown` <- intersect(tmMS_root_degs$up, tmTS_root_degs$down) %>% length()
+`traunsteineri vs majalis (St. Ulrich) Root Mdown_Tup` <- intersect(tmMS_root_degs$down, tmTS_root_degs$up) %>% length()
+
+
+result_table <- data.frame(comparison=c("traunsteineri vs majalis (M) up", 
+                                      "traunsteineri vs majalis (M) down",
+                                      "traunsteineri vs majalis (T) up", 
+                                      "traunsteineri vs majalis (T) down",
+                                      "traunsteineri vs majalis Mup_Tup", 
+                                      "traunsteineri vs majalis Mdown_Tdown", 
+                                      "traunsteineri vs majalis Mup_Tdown", 
+                                      "traunsteineri vs majalis Mdown_Tup",
+                                      "majalis (M-T) up",
+                                      "majalis (M-T) down",
+                                      "traunsteineri (T-M) up",
+                                      "traunsteineri (T-M) down"),
+                           `Leaf Kitzbuhel`=c(`traunsteineri vs majalis (M Kitzbuhel) leaf up`, 
+                                              `traunsteineri vs majalis (M Kitzbuhel) leaf down`,
+                                              `traunsteineri vs majalis (T Kitzbuhel) leaf up`,
+                                              `traunsteineri vs majalis (T Kitzbuhel) leaf down`,
+                                              `traunsteineri vs majalis (Kitzbuhel) Leaf Mup Tup`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Leaf Mdown Tdown`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Leaf Mup Tdown`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Leaf Mdown Tup`,
+                                              `majalis (M-T Kitzbuhel) leaf up`, 
+                                              `majalis (M-T Kitzbuhel) leaf down`, 
+                                              `traunsteineri (T-M Kitzbuhel) leaf up`, 
+                                              `traunsteineri (T-M Kitzbuhel) leaf down`),
+                           `Leaf St. Ulrich`=c(`traunsteineri vs majalis (M St. Ulrich) leaf up`,
+                                               `traunsteineri vs majalis (M St. Ulrich) leaf down`,
+                                               `traunsteineri vs majalis (T St. Ulrich) leaf up`,
+                                               `traunsteineri vs majalis (T St. Ulrich) leaf down`,
+                                               `traunsteineri vs majalis (St. Ulrich) Leaf Mup Tup`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Leaf Mdown Tdown`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Leaf Mup Tdown`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Leaf Mdown Tup`,
+                                               `majalis (M-T St. Ulrich) leaf up`, 
+                                               `majalis (M-T St. Ulrich) leaf down`,
+                                               `traunsteineri (T-M St. Ulrich) leaf up`,
+                                               `traunsteineri (T-M St. Ulrich) leaf down`),
+                           `Root Kitzbuhel`=c(`traunsteineri vs majalis (M Kitzbuhel) root up`,
+                                              `traunsteineri vs majalis (M Kitzbuhel) root down`,
+                                              `traunsteineri vs majalis (T Kitzbuhel) root up`,
+                                              `traunsteineri vs majalis (T Kitzbuhel) root down`,
+                                              `traunsteineri vs majalis (Kitzbuhel) Root Mup_Tup`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Root Mdown_Tdown`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Root Mup_Tdown`, 
+                                              `traunsteineri vs majalis (Kitzbuhel) Root Mdown_Tup`,
+                                              `majalis (M-T Kitzbuhel) root up`,
+                                              `majalis (M-T Kitzbuhel) root down`,
+                                              `traunsteineri (T-M Kitzbuhel) root up`,
+                                              `traunsteineri (T-M Kitzbuhel) root down`),
+                           `Root St. Ulrich`=c(`traunsteineri vs majalis (M St. Ulrich) root up`, 
+                                               `traunsteineri vs majalis (M St. Ulrich) root down`,
+                                               `traunsteineri vs majalis (T St. Ulrich) root up`, 
+                                               `traunsteineri vs majalis (T St. Ulrich) root down`,
+                                               `traunsteineri vs majalis (St. Ulrich) Root Mup_Tup`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Root Mdown_Tdown`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Root Mup_Tdown`, 
+                                               `traunsteineri vs majalis (St. Ulrich) Root Mdown_Tup`,
+                                               `majalis (M-T St. Ulrich) root up`,
+                                               `majalis (M-T St. Ulrich) root down`,
+                                               `traunsteineri (T-M St. Ulrich) root up`,
+                                               `traunsteineri (T-M St. Ulrich) root down`))
+
+
+write.xlsx(result_table, file = "SupplementaryTableX_differentially_expressed_genes.xlsx")
+
 
 
 
@@ -1004,7 +1159,7 @@ root_go_bound_newcol <- root_go_bound %>% mutate(newcol="placeholder", tissue="R
 #root_go_bound_newcol$comparison <- factor(root_go_bound$comparison, levels = unique(root_go_bound$comparison))
 root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress",]$Term <- "+ve reg. transcription from RNApolII prmtr in response to heat stress"
 root_go_bound_newcol[root_go_bound_newcol$Term == "regulation of transcription from RNA polymerase II promoter in response to stress",]$Term <- "reg. transcription from RNApolII promoter in response to stress"
-leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "peptidyl-diphthamide biosynthetic process from peptidyl-histidine",]$Term <- "peptidyl-diphthamide biosyn. proc. from peptidyl-histidine"
+#leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "peptidyl-diphthamide biosynthetic process from peptidyl-histidine",]$Term <- "peptidyl-diphthamide biosyn. proc. from peptidyl-histidine"
 
 leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "negative regulation of phosphoprotein phosphatase activity",]$Term <- "-ve regulation of phosphoprotein phosphatase activity"
 
@@ -1012,7 +1167,8 @@ leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "negative regulation of phosph
 leaf_go_bound_newcol$Term <- leaf_go_bound_newcol$Term %>% as.character() %>% make.unique(sep = " ")
 root_go_bound_newcol$Term <- root_go_bound_newcol$Term %>% as.character() %>% make.unique(sep = " ")
 
-
+leaf_go_bound_newcol$Term<-str_replace(leaf_go_bound_newcol$Term, "1", " ")
+root_go_bound_newcol$Term<-str_replace(root_go_bound_newcol$Term, "1", " ")
 
 leaf_go_bound_newcol_order <- leaf_go_bound_newcol %>%
   arrange(comparison) %>%   
