@@ -15,6 +15,7 @@ library(egg)
 library(eulerr)
 library(openxlsx)
 library(SuperExactTest)
+library(ggvenn)
 library(cowplot)
 library(ggpubr)
 source("dactylorhiza_functions.R")
@@ -236,7 +237,8 @@ pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=Locality, fill=Locality, shape=int
   scale_shape_manual(labels=c("D. majalis native", "D. traunstaineri native", "D. majalis transplant", "D. traunstaineri transplant"), values = c(16, 15, 10, 7)) +
   facet_wrap(~ Tissue + Locality, ncol=2)
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 2000, height = 1600)
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 2000, height = 1600)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.pdf", width = 28, height = 22)
 pca_plot
 dev.off()
 
@@ -446,7 +448,8 @@ scatt <-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
         plot.margin = margin(0.5, 0.5, 0.5, 2, "cm")) +
   guides(colour = guide_legend(override.aes = list(size=10)))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1400, height = 580)
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1400, height = 580)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.pdf", width = 20, height =12, onefile=FALSE)
 egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
 dev.off()
 
@@ -551,7 +554,8 @@ b_legend<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, 
 leg <- cowplot::get_legend(b_legend)
 leg<-as_ggplot(leg)
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5500)
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5500)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.pdf", height=40, width=80)
 plot_grid(a, b, leg,
           ncol = 3,
           rel_widths = c(2, 2, 1),
@@ -711,35 +715,31 @@ myCol <- brewer.pal(4, "Pastel2")
 
 
 myCol<-c("deeppink", "yellowgreen", "deepskyblue", "orange1")
-# Chart
-venn.diagram(
-  x = list(a, b, c, d),
-  category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure5A_Leaf.png',
-  output=TRUE,
-  
-  # Output features
-  imagetype="png" ,
-  height = 1080 , 
-  width = 1080 , 
-  resolution = 1000,
-  compression = "lzw",
-  
-  # Circles
-  lwd = 2,
-  lty = 'blank',
-  fill = myCol,
-  
-  # Numbers
-  cex = .4,
-  fontface = "bold",
-  fontfamily = "sans",
-  
-  # Set names
-  cat.cex = 0.3,
-  cat.fontface = "bold",
-  cat.fontfamily = "sans"
-)
+
+ggvenn(
+  list(mK=a, mS=b, tK=c, tS=d), 
+  fill_color = myCol,
+  stroke_size = 0.9, 
+  set_name_size = 7, 
+  text_size = 8, 
+  show_percentage = FALSE
+) + ggtitle("Leaf Plastic") +
+  theme(plot.title = element_text(hjust = 0.5, size=25, face = "bold"))
+
+
+
+pdf("Figure5A_Leaf.pdf", height = 25, width = 25)
+ggvenn(
+  list(mK=a, mS=b, tK=c, tS=d), 
+  fill_color = myCol,
+  stroke_size = 0.9, 
+  set_name_size = 30, 
+  text_size = 30, 
+  show_percentage = FALSE
+) + ggtitle("Leaf Plastic") +
+  theme(plot.title = element_text(hjust = 0.5, size=70, face = "bold"))
+dev.off()
+
 
 
 e<-get_significant_genes(transplant_majalis_kitzbuhl_root)
@@ -747,34 +747,18 @@ f<-get_significant_genes(transplant_majalis_stulrich_root)
 g<-get_significant_genes(transplant_traunsteineri_kitzbuhl_root)
 h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
 
-venn.diagram(
-  x = list(e, f, g, h),
-  category.names = c("mK", "mS", "tK", "tS"),
-  filename = 'Figure5A_Root.png',
-  output=TRUE,
-  
-  # Output features
-  imagetype="png" ,
-  height = 1080 , 
-  width = 1080 , 
-  resolution = 1000,
-  compression = "lzw",
-  
-  # Circles
-  lwd = 2,
-  lty = 'blank',
-  fill = myCol,
-  
-  # Numbers
-  cex = .4,
-  fontface = "bold",
-  fontfamily = "sans",
-  
-  # Set names
-  cat.cex = 0.3,
-  cat.fontface = "bold",
-  cat.fontfamily = "sans"
-)
+pdf("Figure5A_Root.pdf", height = 25, width = 25)
+ggvenn(
+  list(mK=e, mS=f, tK=g, tS=h), 
+  fill_color = myCol,
+  stroke_size = 0.9, 
+  set_name_size = 30, 
+  text_size = 30, 
+  show_percentage = FALSE
+) + ggtitle("Root Plastic") +
+  theme(plot.title = element_text(hjust = 0.5, size=70, face = "bold"))
+dev.off()
+
 
 
 
