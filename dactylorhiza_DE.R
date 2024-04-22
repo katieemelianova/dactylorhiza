@@ -222,20 +222,82 @@ pcaLeafStUlrichData %<>% mutate("Tissue" = "Leaf", "Locality" = "St Ulrich")
 
 pcaData <- rbind(pcaRootKitzbuhelData, pcaRootStUlrichData, pcaLeafKitzbuhelData, pcaLeafStUlrichData)
 
-pca_plot<-ggplot(pcaData, aes(PC1, PC2, color=Locality, fill=Locality, shape=interaction(species, treatment))) +
-  geom_point(size=15, stroke = 1.5) +
-  #xlab(paste0("PC1: ",percentRootVar[1],"% variance")) +
-  #ylab(paste0("PC2: ",percentRootVar[2],"% variance")) + 
-  #coord_fixed() + 
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2A_RootKitzbuhel.pdf", width = 19, height = 19)
+ggplot(pcaRootKitzbuhelData, aes(PC1, PC2)) +          
+  geom_point(size = 25, 
+             stroke = 13, aes(fill = species, colour=group, shape=species)) +
+  xlab(paste0("PC1: ", percentRootKitzbuhelVar[1],"% variance")) +
+  ylab(paste0("PC2: ", percentRootKitzbuhelVar[2],"% variance")) + 
+  scale_colour_manual(values = c("gold", "dodgerblue", "dodgerblue", "gold")) +
+  scale_fill_manual(values = c("gold", "dodgerblue")) +
+  scale_shape_manual(values=c(22, 21)) +
   theme(legend.title = element_blank(),
-        text = element_text(size = 40), 
-        legend.text=element_text(size=35),
+        text = element_text(size = 40),
         axis.text=element_text(size=45),
         axis.title=element_text(size=45),
-        plot.margin = unit(c(1,1,1,1), "cm"),
-        strip.text.x = element_text(size = 45)) +
-  scale_shape_manual(labels=c("D. majalis native", "D. traunstaineri native", "D. majalis transplant", "D. traunstaineri transplant"), values = c(16, 15, 10, 7)) +
-  facet_wrap(~ Tissue + Locality, ncol=2)
+        legend.position="none",
+        panel.background = element_blank())
+dev.off()
+
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2B_RootStUlrich.pdf", width = 19, height = 19)
+ggplot(pcaRootStUlrichData, aes(PC1, PC2)) +          
+  geom_point(size = 25, 
+             stroke = 13, aes(fill = species, colour=group, shape=species)) +
+  xlab(paste0("PC1: ", percentRootStUlrichVar[1],"% variance")) +
+  ylab(paste0("PC2: ", percentRootStUlrichVar[2],"% variance")) + 
+  scale_colour_manual(values = c("gold", "dodgerblue", "dodgerblue", "gold")) +
+  scale_fill_manual(values = c("gold", "dodgerblue")) +
+  scale_shape_manual(values=c(22, 21)) +
+  theme(legend.title = element_blank(),
+        text = element_text(size = 40),
+        axis.text=element_text(size=45),
+        axis.title=element_text(size=45),
+        legend.position="none",
+        panel.background = element_blank())
+dev.off()
+
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2C_LeafKitzbuhel.pdf", width = 19, height = 19)
+ggplot(pcaLeafKitzbuhelData, aes(PC1, PC2)) +          
+  geom_point(size = 25, 
+             stroke = 13, aes(fill = species, colour=group, shape=species)) +
+  xlab(paste0("PC1: ", percentLeafKitzbuhelVar[1],"% variance")) +
+  ylab(paste0("PC2: ", percentLeafKitzbuhelVar[2],"% variance")) + 
+  scale_colour_manual(values = c("gold", "dodgerblue", "dodgerblue", "gold")) +
+  scale_fill_manual(values = c("gold", "dodgerblue")) +
+  scale_shape_manual(values=c(22, 21)) +
+  theme(legend.title = element_blank(),
+        text = element_text(size = 40),
+        axis.text=element_text(size=45),
+        axis.title=element_text(size=45),
+        legend.position="none",
+        panel.background = element_blank())
+dev.off()
+
+
+
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2D_LeafStUlrich.pdf", width = 19, height = 19)
+ggplot(pcaLeafStUlrichData, aes(PC1, PC2)) +          
+  geom_point(size = 25, 
+             stroke = 13, aes(fill = species, colour=group, shape=species)) +
+  xlab(paste0("PC1: ", percentLeafStUlrichVar[1],"% variance")) +
+  ylab(paste0("PC2: ", percentLeafStUlrichVar[2],"% variance")) + 
+  scale_colour_manual(values = c("gold", "dodgerblue", "dodgerblue", "gold")) +
+  scale_fill_manual(values = c("gold", "dodgerblue")) +
+  scale_shape_manual(values=c(22, 21)) +
+  theme(legend.title = element_blank(),
+        text = element_text(size = 40),
+        axis.text=element_text(size=45),
+        axis.title=element_text(size=45),
+        legend.position="none",
+        panel.background = element_blank())
+dev.off()
+
+
+
 
 #png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.png", width = 2000, height = 1600)
 pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.pdf", width = 28, height = 22)
@@ -434,23 +496,24 @@ scatt <-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
   ylab("Fold change in traunsteineri environment") +
   xlab("Fold change in majalis environment") +
   scale_color_manual(values = c("DE in D. majalis environment only" = "gold", 
-                                "DE in D. traunsteineri environment only" = "deeppink",
+                                "DE in D. traunsteineri environment only" = "dodgerblue",
                                 "Not significant" = "grey",
-                                "Constitutively DE" = "dodgerblue")) + 
+                                "Constitutively DE" = "deeppink")) + 
   facet_wrap(~ tissue + locality, ncol=2) +
-  theme(text = element_text(size = 20), 
-        legend.text=element_text(size=20),
+  theme(text = element_text(size = 21), 
+        legend.text=element_text(size=21),
         #legend.title=element_text(size=23),
-        axis.text=element_text(size=24),
-        axis.title=element_text(size=28),
+        axis.text=element_text(size=30),
+        axis.title=element_text(size=32),
         legend.title=element_blank(),
-        strip.text.x = element_text(size = 27), 
+        strip.text.x = element_text(size = 32), 
         plot.margin = margin(0.5, 0.5, 0.5, 2, "cm")) +
   guides(colour = guide_legend(override.aes = list(size=10)))
 
-#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1400, height = 580)
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.pdf", width = 20, height =12, onefile=FALSE)
-egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1500, height = 1000)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.pdf", width = 20, height =15, onefile=FALSE)
+#egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
+scatt
 dev.off()
 
 # how many DE genes are there in each category?
@@ -507,7 +570,7 @@ leaf_go_bound %<>% mutate(Term = fct_reorder(Term, Environment))
 
 a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 90), 
+  theme(text = element_text(size = 95), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
@@ -519,12 +582,12 @@ a<-ggplot(root_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Ri
         plot.margin = margin(0, 0, 0, 0, "cm")) + 
   scale_size_continuous(range = c(18, 60)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
-  scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
+  scale_color_manual(values=c("deeppink", "gold", "dodgerblue")) +
   theme(legend.position = "none") 
 
 b <- ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=Rich.score)) + 
   geom_point() + facet_grid(scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 90), 
+  theme(text = element_text(size = 95), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
@@ -537,7 +600,7 @@ b <- ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, size=
         plot.margin = margin(0, 0, 0, 0, "cm")) + 
   scale_size_continuous(range = c(18, 60)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
-  scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
+  scale_color_manual(values=c("deeppink", "gold", "dodgerblue")) +
   scale_y_discrete(position = "right") 
 
 
@@ -546,7 +609,7 @@ b_legend<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, 
   theme(legend.margin=margin(c(0,0,0,0)),
         legend.text=element_text(size=70),
         legend.title=element_text(size=70)) + 
-  scale_color_manual(values=c("dodgerblue", "gold", "deeppink")) +
+  scale_color_manual(values=c("deeppink", "gold", "dodgerblue")) +
   guides(color = guide_legend(override.aes = list(size = 30))) +
   scale_size_continuous(range = c(18, 60))
 
@@ -554,12 +617,12 @@ b_legend<-ggplot(leaf_go_bound, aes(x=placeholder, y=Term, color = Environment, 
 leg <- cowplot::get_legend(b_legend)
 leg<-as_ggplot(leg)
 
-#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5500)
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.pdf", height=40, width=80)
+png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.png", height=2000, width=5700)
+#pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4.pdf", height=35, width=80)
 plot_grid(a, b, leg,
           ncol = 3,
-          rel_widths = c(2, 2, 1),
-          rel_heights = c(2, 2, 1))
+          rel_widths = c(2, 2, 1.1),
+          rel_heights = c(2, 2, 1.1))
 dev.off()
 
 ######################################################################
@@ -713,53 +776,56 @@ d<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
 library(RColorBrewer)
 myCol <- brewer.pal(4, "Pastel2")
 
-
 myCol<-c("deeppink", "yellowgreen", "deepskyblue", "orange1")
 
-ggvenn(
+
+#pdf("Figure5A_Leaf.pdf", height = 25, width = 25)
+#png("Figure5A_Leaf.png", height = 2000, width = 2000)
+leaf_venn<-ggvenn(
   list(mK=a, mS=b, tK=c, tS=d), 
   fill_color = myCol,
   stroke_size = 0.9, 
-  set_name_size = 7, 
-  text_size = 8, 
-  show_percentage = FALSE
-) + ggtitle("Leaf Plastic") +
-  theme(plot.title = element_text(hjust = 0.5, size=25, face = "bold"))
-
-
-
-pdf("Figure5A_Leaf.pdf", height = 25, width = 25)
-ggvenn(
-  list(mK=a, mS=b, tK=c, tS=d), 
-  fill_color = myCol,
-  stroke_size = 0.9, 
-  set_name_size = 30, 
+  set_name_size = 21.5, 
   text_size = 30, 
   show_percentage = FALSE
-) + ggtitle("Leaf Plastic") +
-  theme(plot.title = element_text(hjust = 0.5, size=70, face = "bold"))
-dev.off()
-
-
+) + theme(plot.margin = unit(c(2,2,2,2), "cm"))
+#dev.off()
 
 e<-get_significant_genes(transplant_majalis_kitzbuhl_root)
 f<-get_significant_genes(transplant_majalis_stulrich_root)
 g<-get_significant_genes(transplant_traunsteineri_kitzbuhl_root)
 h<-get_significant_genes(transplant_traunsteineri_stulrich_root)
 
-pdf("Figure5A_Root.pdf", height = 25, width = 25)
-ggvenn(
+#pdf("Figure5A_Root.pdf", height = 25, width = 25)
+#png("Figure5A_Root.png", height = 2000, width = 2000)
+root_venn<-ggvenn(
   list(mK=e, mS=f, tK=g, tS=h), 
   fill_color = myCol,
   stroke_size = 0.9, 
-  set_name_size = 30, 
+  set_name_size = 21.5, 
   text_size = 30, 
   show_percentage = FALSE
-) + ggtitle("Root Plastic") +
-  theme(plot.title = element_text(hjust = 0.5, size=70, face = "bold"))
+) + theme(plot.margin = unit(c(2,2,2,2), "cm"))
+#dev.off()
+
+# need to set set_name_size = 25.5
+png("Figure5.png", height = 1400, width = 3200)
+cowplot::plot_grid(leaf_venn, root_venn,
+                   labels = c('Leaf', 
+                              'Root'),
+                   label_size = 80,
+                   label_x = c(0.4, 0.4))
 dev.off()
 
 
+# need to set set_name_size = 23
+pdf("Figure5.pdf", height = 20, width = 40)
+cowplot::plot_grid(leaf_venn, root_venn,
+                   labels = c('Leaf', 
+                              'Root'),
+                   label_size = 80,
+                   label_x = c(0.4, 0.4))
+dev.off()
 
 
 #####################################
