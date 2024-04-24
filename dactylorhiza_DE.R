@@ -41,7 +41,7 @@ star_summary_stats %<>% mutate(Tissue=case_when(endsWith(star_summary_stats$Libr
   
 star_summary_stats %>% summary()
 
-write.xlsx(star_summary_stats, file = "SupplementaryTable1_read_mapping_summary.xlsx")
+
 
 
 aggregate(`Uniquely Mapped` ~ locality, data = star_summary_stats, mean)
@@ -183,7 +183,7 @@ root_stulrich_dds <- DESeqDataSetFromMatrix(countData = root_stulrich_dds[["coun
 
 
 
-# make a dds object from the total leaf samples (no subsetting)
+# make a dds object from the total leaf samples
 leaf_kitzbuhel_dds<-specify_comparison(leaf_samples, df_counts_leaf, "locality == 'Kitzbuhl'")
 leaf_stulrich_dds<-specify_comparison(leaf_samples, df_counts_leaf, "locality == 'St Ulrich'")
 
@@ -204,14 +204,14 @@ leaf_stulrich_vst<-varianceStabilizingTransformation(leaf_stulrich_dds)
 
 
 # plot the PCA 
-pcaRootKitzbuhelData <-plotPCA(root_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+pcaRootKitzbuhelData <-plotPCA(root_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 52665, returnData = TRUE)
 percentRootKitzbuhelVar <- round(100 * attr(pcaRootKitzbuhelData, "percentVar"))
-pcaRootStUlrichData <-plotPCA(root_stulrich_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+pcaRootStUlrichData <-plotPCA(root_stulrich_vst, intgroup=c("species", "treatment"), ntop = 52665, returnData = TRUE)
 percentRootStUlrichVar <- round(100 * attr(pcaRootStUlrichData, "percentVar"))
 
-pcaLeafKitzbuhelData <-plotPCA(leaf_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+pcaLeafKitzbuhelData <-plotPCA(leaf_kitzbuhel_vst, intgroup=c("species", "treatment"), ntop = 52665, returnData = TRUE)
 percentLeafKitzbuhelVar <- round(100 * attr(pcaLeafKitzbuhelData, "percentVar"))
-pcaLeafStUlrichData <-plotPCA(leaf_stulrich_vst, intgroup=c("species", "treatment"), ntop = 1000, returnData = TRUE)
+pcaLeafStUlrichData <-plotPCA(leaf_stulrich_vst, intgroup=c("species", "treatment"), ntop = 52665, returnData = TRUE)
 percentLeafStUlrichVar <- round(100 * attr(pcaLeafStUlrichData, "percentVar"))
 
 pcaRootKitzbuhelData %<>% mutate("Tissue" = "Root", "Locality" = "Kitzbuhel")
@@ -223,7 +223,7 @@ pcaLeafStUlrichData %<>% mutate("Tissue" = "Leaf", "Locality" = "St Ulrich")
 pcaData <- rbind(pcaRootKitzbuhelData, pcaRootStUlrichData, pcaLeafKitzbuhelData, pcaLeafStUlrichData)
 
 
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2A_RootKitzbuhel.pdf", width = 19, height = 19)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2A_RootKitzbuhel_ntop52665.pdf", width = 19, height = 19)
 ggplot(pcaRootKitzbuhelData, aes(PC1, PC2)) +          
   geom_point(size = 25, 
              stroke = 13, aes(fill = species, colour=group, shape=species)) +
@@ -241,7 +241,7 @@ ggplot(pcaRootKitzbuhelData, aes(PC1, PC2)) +
 dev.off()
 
 
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2B_RootStUlrich.pdf", width = 19, height = 19)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2B_RootStUlrich_ntop52665.pdf", width = 19, height = 19)
 ggplot(pcaRootStUlrichData, aes(PC1, PC2)) +          
   geom_point(size = 25, 
              stroke = 13, aes(fill = species, colour=group, shape=species)) +
@@ -259,7 +259,7 @@ ggplot(pcaRootStUlrichData, aes(PC1, PC2)) +
 dev.off()
 
 
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2C_LeafKitzbuhel.pdf", width = 19, height = 19)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2C_LeafKitzbuhel_ntop52665.pdf", width = 19, height = 19)
 ggplot(pcaLeafKitzbuhelData, aes(PC1, PC2)) +          
   geom_point(size = 25, 
              stroke = 13, aes(fill = species, colour=group, shape=species)) +
@@ -279,7 +279,7 @@ dev.off()
 
 
 
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2D_LeafStUlrich.pdf", width = 19, height = 19)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2D_LeafStUlrich_ntop52665.pdf", width = 19, height = 19)
 ggplot(pcaLeafStUlrichData, aes(PC1, PC2)) +          
   geom_point(size = 25, 
              stroke = 13, aes(fill = species, colour=group, shape=species)) +
@@ -316,6 +316,21 @@ percentLeafStUlrichVar[2]
 ###############################################################
 #      Count how many genes are expressed total per tissue    #
 ###############################################################
+
+
+# make a dds object from the total root samples (no subsetting)
+root_dds<-specify_comparison(root_samples, df_counts_root, "1 == 1")
+leaf_dds<-specify_comparison(leaf_samples, df_counts_leaf, "1 == 1")
+
+
+root_dds <- DESeqDataSetFromMatrix(countData = root_dds[["counts"]],
+                                             colData = root_dds[["samples"]],
+                                             design = ~ species + treatment)
+leaf_dds <- DESeqDataSetFromMatrix(countData = leaf_dds[["counts"]],
+                                             colData = leaf_dds[["samples"]],
+                                             design = ~ species + treatment)
+
+
 leaf_kitzbuhel_names<-leaf_samples %>% filter(locality == "Kitzbuhl") %>% rownames()
 leaf_stulrich_names<-leaf_samples %>% filter(locality == "St Ulrich") %>% rownames()
 
@@ -450,7 +465,9 @@ all_bound<-rbind(stu_root,
 
 
 all_bound %<>% mutate(status=case_when(majalis_env_padj < 0.05 &
-                                         traunst_env_padj < 0.05 ~ "Constitutively DE",
+                                         traunst_env_padj < 0.05 & majalis_env <= 0 & traunst_env <= 0 ~ "Constitutively DE",
+                                      majalis_env_padj < 0.05 &
+                                        traunst_env_padj < 0.05 & majalis_env >= 0 & traunst_env >= 0 ~ "Constitutively DE",
                                          majalis_env_padj < 0.05 &
                                          traunst_env_padj > 0.05 ~ "DE in D. majalis environment only",
                                          majalis_env_padj > 0.05 &
@@ -477,8 +494,8 @@ bar_dataset<-all_bound %>% dplyr::select(status, locality, tissue) %>% filter(st
 bar <- ggplot(bar_dataset, aes(x=locality, fill=status)) +
   geom_bar(position="stack") + facet_wrap(~ tissue, ncol=2) +
   scale_fill_manual(values = c("DE in D. majalis environment only" = "gold", 
-                               "DE in D. traunsteineri environment only" = "deeppink",
-                               "Constitutively DE" = "dodgerblue")) +
+                               "DE in D. traunsteineri environment only" = "dodgerblue",
+                               "Constitutively DE" = "deeppink")) +
   ylab("Number of Genes") +
   #xlab("Locality") +
   theme(text = element_text(size = 20), 
@@ -486,8 +503,8 @@ bar <- ggplot(bar_dataset, aes(x=locality, fill=status)) +
         axis.text=element_text(size=24),
         axis.title=element_text(size=28),
         axis.title.x=element_blank(),
-        strip.text.x = element_text(size = 27),
-        axis.text.x = element_text(angle = 45, size = 20, vjust = 1, hjust=1))
+        strip.text.x = element_text(size = 32),
+        axis.text.x = element_text(angle = 45, size = 30, vjust = 1, hjust=1))
 
 scatt <-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
   geom_point(alpha=0.5, size = 4) + 
@@ -510,10 +527,9 @@ scatt <-ggplot(all_bound, aes(x=majalis_env, y=traunst_env, colour=status)) +
         plot.margin = margin(0.5, 0.5, 0.5, 2, "cm")) +
   guides(colour = guide_legend(override.aes = list(size=10)))
 
-#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1500, height = 1000)
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.pdf", width = 20, height =15, onefile=FALSE)
-#egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
-scatt
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.png", width = 1800, height = 900)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure3.pdf", width = 25, height =12, onefile=FALSE)
+egg::ggarrange(bar, scatt, ncol=2, widths = c(0.5, 1), labels = c('A', 'B'), label.args = list(gp = grid::gpar(font = 2, cex = 2.6)))
 dev.off()
 
 # how many DE genes are there in each category?
@@ -624,6 +640,30 @@ plot_grid(a, b, leg,
           rel_widths = c(2, 2, 1.1),
           rel_heights = c(2, 2, 1.1))
 dev.off()
+
+
+#############################################################################
+#    Make a table of constitutive GO terms total for supplementary table4  #
+############################################################################
+
+
+de_majalis_only_root_GO_df <- de_majalis_only_root_GO %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="D. majalis Environment Only", tissue="Root")
+de_traunsteineri_only_root_GO_df <- de_traunsteineri_only_root_GO %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. traunsteineri Environment Only", tissue="Root")
+de_majalis_only_leaf_GO_df <- de_majalis_only_leaf_GO %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. majalis Environment Only", tissue="Leaf")
+de_traunsteineri_only_leaf_GO_df <- de_traunsteineri_only_leaf_GO %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. traunsteineri Environment Only", tissue="Leaf")
+de_constitutive_leaf_GO_df <- de_constitutive_leaf_GO %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="Constitutively DE", tissue="Leaf")
+de_constitutive_root_GO_df<- de_constitutive_root_GO %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="Constitutively DE", tissue="Root")
+
+rbind(de_majalis_only_root_GO_df,
+      de_traunsteineri_only_root_GO_df,
+      de_majalis_only_leaf_GO_df,
+      de_traunsteineri_only_leaf_GO_df,
+      de_constitutive_leaf_GO_df,
+      de_constitutive_root_GO_df) %>% 
+  write.xlsx(file = "SupplementaryTable5_constitutive_and_specific_GOterms.xlsx")
+
+
+
 
 ######################################################################
 #    Test for whether more constitutively DEGs are found by chance   #
@@ -773,6 +813,13 @@ c<-get_significant_genes(transplant_traunsteineri_kitzbuhl_leaf)
 d<-get_significant_genes(transplant_traunsteineri_stulrich_leaf)
 
 
+length(intersect(a, b))/length(unique(c(a, b))) * 100
+length(intersect(c, d))/length(unique(c(c, d))) * 100
+
+length(intersect(d, e))/length(unique(c(d, e))) * 100
+length(intersect(f, g))/length(unique(c(f, g))) * 100
+
+
 library(RColorBrewer)
 myCol <- brewer.pal(4, "Pastel2")
 
@@ -787,7 +834,7 @@ leaf_venn<-ggvenn(
   stroke_size = 0.9, 
   set_name_size = 21.5, 
   text_size = 30, 
-  show_percentage = FALSE
+  show_percentage = TRUE
 ) + theme(plot.margin = unit(c(2,2,2,2), "cm"))
 #dev.off()
 
@@ -1011,6 +1058,8 @@ tmTS_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_stulrich, dir
 `traunsteineri vs majalis (St. Ulrich) Root Mup_Tdown` <- intersect(tmMS_root_degs$up, tmTS_root_degs$down) %>% length()
 `traunsteineri vs majalis (St. Ulrich) Root Mdown_Tup` <- intersect(tmMS_root_degs$down, tmTS_root_degs$up) %>% length()
 
+result_table %>% filter(comparison %in% c("traunsteineri vs majalis Mup_Tup", "traunsteineri vs majalis Mdown_Tdown"))
+
 
 result_table <- data.frame(comparison=c("traunsteineri vs majalis (M) up", 
                                       "traunsteineri vs majalis (M) down",
@@ -1074,7 +1123,23 @@ result_table <- data.frame(comparison=c("traunsteineri vs majalis (M) up",
                                                `traunsteineri (T-M St. Ulrich) root down`))
 
 
-write.xlsx(result_table, file = "SupplementaryTableX_differentially_expressed_genes.xlsx")
+write.xlsx(result_table, file = "SupplementaryTable4_differentially_expressed_genes.xlsx")
+
+##################################################################################################
+#    find number of DEGs in each environment per locality, regardless of tissue or direction     #
+################################################################################################## 
+
+# Majalis environment Kitzbuhel
+result_table %>% filter(comparison %in% c("traunsteineri vs majalis (M) up", "traunsteineri vs majalis (M) down")) %>% dplyr::select("Leaf.Kitzbuhel", "Root.Kitzbuhel") %>% colSums() %>% sum()
+# Majalis environment St. Ulrich
+result_table %>% filter(comparison %in% c("traunsteineri vs majalis (M) up", "traunsteineri vs majalis (M) down")) %>% dplyr::select("Leaf.St..Ulrich", "Root.St..Ulrich") %>% colSums() %>% sum()
+
+# Traunsteineri environment Kitzbuhel
+result_table %>% filter(comparison %in% c("traunsteineri vs majalis (T) up", "traunsteineri vs majalis (T) down")) %>% dplyr::select("Leaf.Kitzbuhel", "Root.Kitzbuhel") %>% colSums() %>% sum()
+# Traunsteineri environment St. Ulrich
+result_table %>% filter(comparison %in% c("traunsteineri vs majalis (T) up", "traunsteineri vs majalis (T) down")) %>% dplyr::select("Leaf.St..Ulrich", "Root.St..Ulrich") %>% colSums() %>% sum()
+
+
 
 
 
@@ -1138,17 +1203,6 @@ transplant_traunsteineri_stulrich_root_down<-get_enriched_terms(get_significant_
 #        Plot GO term enrichment      #
 #######################################
 
-
-prepare_go_df<-function(topgo_object){
-  topgo_object %<>% 
-    mutate(`Rich score`=Significant/Annotated) %>% 
-    dplyr::select(Term, GO.ID, Significant, Annotated, classicFisher, `Rich score`) %>% 
-    #filter(classicFisher < 0.05) %>% 
-    filter(classicFisher < 0.05 & `Rich score` >= 0.07) %>% 
-    head(5) %>% 
-    data.frame()
-  return(topgo_object)
-}
 
 mKLeafUp<-prepare_go_df(transplant_majalis_kitzbuhl_leaf_up) %>% mutate(comparison="D. majalis Kitzbuhel", Direction="Plastic Upregulated", locality="Kitzbuhel", species="D. majalis")
 mSLeafUp<-prepare_go_df(transplant_majalis_stulrich_leaf_up) %>% mutate(comparison="D. majalis St. Ulrich", Direction="Plastic Upregulated", locality="St. Ulrich", species="D. majalis")
@@ -1232,18 +1286,19 @@ root_go_bound_newcol_order <- root_go_bound_newcol %>%
 
 a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, shape=Locality, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(Direction), scales="free_y", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 71), 
+  theme(text = element_text(size = 73), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
         strip.text.y = element_text(size = 65),
-        strip.text.x = element_text(size = 70),
+        #strip.text.x = element_text(size = 70),
+        strip.text.x = element_blank(),
         legend.text=element_text(size=40),
         legend.title=element_text(size=40),
         panel.spacing=unit(1, "lines")) + 
   scale_size_continuous(range = c(13, 33)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
-  scale_color_manual(values=c("mediumorchid1", "mediumseagreen")) +
+  scale_color_manual(values=c("gold", "dodgerblue")) +
   theme(legend.position = "none")
 
 
@@ -1259,12 +1314,13 @@ a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, sha
 
 b<-ggplot(root_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, shape=Locality, size=`Rich factor`)) + 
   geom_point() + facet_grid(rows=vars(Direction), scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 71), 
+  theme(text = element_text(size = 73), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
         strip.text.y = element_text(size = 70),
-        strip.text.x = element_text(size = 70),
+        #strip.text.x = element_text(size = 70),
+        strip.text.x = element_blank(),
         legend.text=element_text(size=45),
         legend.title=element_text(size=45),
         panel.spacing=unit(1, "lines"),
@@ -1273,53 +1329,76 @@ b<-ggplot(root_go_bound_newcol_order, aes(x=newcol, y=Term, color = Species, sha
         legend.key.width = unit(3, 'cm')) + 
   scale_size_continuous(range = c(13, 33)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
-  scale_color_manual(values=c("mediumorchid1", "mediumseagreen")) +
+  scale_color_manual(values=c("gold", "dodgerblue")) +
   scale_y_discrete(position = "right") + 
   guides(colour = guide_legend(override.aes = list(size = 29)),
          shape = guide_legend(override.aes = list(size = 29)))
 
-png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=2800, width=4200)
+#png(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.png", height=2800, width=4200)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.pdf", height=35, width=60, onefile=FALSE)
 egg::ggarrange(a, b, ncol=2)
 dev.off()
 
 
 
 
-
-
-all_env_volcano <- all_env %>% 
-  data.frame() %>% 
-  mutate(diffexpressed=case_when(log2FoldChange >= 2 & padj <= 0.0005 ~ "upregulated",
-                                 log2FoldChange <= -2 & padj <= 0.0005 ~ "downregulated")) %>% 
-  replace_na(list(diffexpressed = "Not significant")) %>%
-  ggplot(data = ., aes(x = log2FoldChange, y = -log10(padj), col = interaction(locality, diffexpressed))) +
-  geom_point(size = 2) + 
-  geom_vline(xintercept = c(-2, 2), col = "gray", linetype = 'dashed') +
-  geom_hline(yintercept = -log10(0.0005), col = "gray", linetype = 'dashed') +
-  scale_color_manual(values = c("#00AFBB", "red", "grey", "grey", "yellow", "pink")) +
-  #ggtitle("transplant stulrich kitzbuhl root") +
-  #theme(plot.title = element_text(hjust = 0.5)) + 
-  xlim(-5, 5) + 
-  ylim(0, 15)
+###############################################################################
+#     Make a table of plastic gene GO terms in full supplementary table 6     #
+###############################################################################
 
 
 
+mKLeafUp_top<-prepare_go_df(transplant_majalis_kitzbuhl_leaf_up, top_terms = 100000) %>% mutate(comparison="D. majalis Kitzbuhel", Direction="Plastic Upregulated", locality="Kitzbuhel", species="D. majalis")
+mSLeafUp_top<-prepare_go_df(transplant_majalis_stulrich_leaf_up, top_terms = 100000) %>% mutate(comparison="D. majalis St. Ulrich", Direction="Plastic Upregulated", locality="St. Ulrich", species="D. majalis")
+tKLeafUp_top<-prepare_go_df(transplant_traunsteineri_kitzbuhl_leaf_up, top_terms = 100000) %>% mutate(comparison="D. traunsteineri Kitzbuhel", Direction="Plastic Upregulated", locality="Kitzbuhel", species="D. traunsteineri")
+tSLeafUp_top<-prepare_go_df(transplant_traunsteineri_stulrich_leaf_up, top_terms = 100000) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="Plastic Upregulated", locality="St. Ulrich", species="D. traunsteineri")
+mKLeafDown_top<-prepare_go_df(transplant_majalis_kitzbuhl_leaf_down, top_terms = 100000) %>% mutate(comparison="D. majalis Kitzbuhel", Direction="Plastic Downregulated", locality="Kitzbuhel", species="D. majalis")
+mSLeafDown_top<-prepare_go_df(transplant_majalis_stulrich_leaf_down, top_terms = 100000) %>% mutate(comparison="D. majalis St. Ulrich", Direction="Plastic Downregulated", locality="St. Ulrich", species="D. majalis")
+tKLeafDown_top<-prepare_go_df(transplant_traunsteineri_kitzbuhl_leaf_down, top_terms = 100000) %>% mutate(comparison="D. traunsteineri Kitzbuhel", Direction="Plastic Downregulated", locality="Kitzbuhel", species="D. traunsteineri")
+tSLeafDown_top<-prepare_go_df(transplant_traunsteineri_stulrich_leaf_down, top_terms = 100000) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="Plastic Downregulated", locality="St. Ulrich", species="D. traunsteineri")
 
-
-
-
-
-
-
+mKRootUp_top<-prepare_go_df(transplant_majalis_kitzbuhl_root_up, top_terms = 100000) %>% mutate(comparison="D. majalis Kitzbuhel", Direction="Plastic Upregulated", locality="Kitzbuhel", species="D. majalis")
+mSRootUp_top<-prepare_go_df(transplant_majalis_stulrich_root_up, top_terms = 100000) %>% mutate(comparison="D. majalis St. Ulrich", Direction="Plastic Upregulated", locality="St. Ulrich", species="D. majalis")
+tKRootUp_top<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_up, top_terms = 100000) %>% mutate(comparison="D. traunsteineri Kitzbuhel", Direction="Plastic Upregulated", locality="Kitzbuhel", species="D. traunsteineri")
+tSRootUp_top<-prepare_go_df(transplant_traunsteineri_stulrich_root_up, top_terms = 100000) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="Plastic Upregulated", locality="St. Ulrich", species="D. traunsteineri")
+mKRootDown_top<-prepare_go_df(transplant_majalis_kitzbuhl_root_down, top_terms = 100000) %>% mutate(comparison="D. majalis Kitzbuhel", Direction="Plastic Downregulated", locality="Kitzbuhel", species="D. majalis")
+mSRootDown_top<-prepare_go_df(transplant_majalis_stulrich_root_down, top_terms = 100000) %>% mutate(comparison="D. majalis St. Ulrich", Direction="Plastic Downregulated", locality="St. Ulrich", species="D. majalis")
+tKRootDown_top<-prepare_go_df(transplant_traunsteineri_kitzbuhl_root_down, top_terms = 100000) %>% mutate(comparison="D. traunsteineri Kitzbuhel", Direction="Plastic Downregulated", locality="Kitzbuhel", species="D. traunsteineri")
+tSRootDown_top<-prepare_go_df(transplant_traunsteineri_stulrich_root_down, top_terms = 100000) %>% mutate(comparison="D. traunsteineri St. Ulrich", Direction="Plastic Downregulated", locality="St. Ulrich", species="D. traunsteineri")
 
 
 
 
+rbind(mKLeafUp_top,
+                     mSLeafUp_top,
+                     tKLeafUp_top,
+                     tSLeafUp_top,
+                     mKLeafDown_top,
+                     mSLeafDown_top,
+                     tKLeafDown_top,
+                     tSLeafDown_top,
+                    mKRootUp_top,
+                    mSRootUp_top,
+                    tKRootUp_top,
+                    tSRootUp_top,
+                    mKRootDown_top,
+                    mSRootDown_top,
+                    tKRootDown_top,
+                    tSRootDown_top) %>% write.xlsx(file = "SupplementaryTable6_plastic_enriched_GOterms.xlsx")
 
 
 
 
 
+
+
+
+
+
+
+
+
+packageDescription("DeSeq2")$Version
 
 
 

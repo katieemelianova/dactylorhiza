@@ -58,9 +58,9 @@ get_enriched_terms<-function(gene_list, mappings){
                       gene2GO = geneID2GO)
   
   # run three tests, fisher, Kol-Smirn, and Kol-Smirn with elimination
-  resultFisher <- runTest(sampleGOdata, algorithm = "classic", statistic = "fisher")
-  resultKS <- runTest(sampleGOdata, algorithm = "classic", statistic = "ks")
-  resultKS.elim <- runTest(sampleGOdata, algorithm = "elim", statistic = "ks")
+  resultFisher <- runTest(sampleGOdata, algorithm = "weight01", statistic = "fisher")
+  resultKS <- runTest(sampleGOdata, algorithm = "weight01", statistic = "ks")
+  resultKS.elim <- runTest(sampleGOdata, algorithm = "weight01", statistic = "ks")
   
   # generate summary tane and return it
   allRes <- GenTable(sampleGOdata, classicFisher = resultFisher,
@@ -69,6 +69,18 @@ get_enriched_terms<-function(gene_list, mappings){
                      numChar=1000 )
   #allRes<-GenTable(sampleGOdata, Fis = resultFisher, topNodes = 20)
   return(allRes)
+}
+
+
+prepare_go_df<-function(topgo_object, top_terms=5){
+  topgo_object %<>% 
+    mutate(`Rich score`=Significant/Annotated) %>% 
+    dplyr::select(Term, GO.ID, Significant, Annotated, classicFisher, `Rich score`) %>% 
+    #filter(classicFisher < 0.05) %>% 
+    filter(classicFisher < 0.05 & `Rich score` >= 0.07) %>% 
+    head(top_terms) %>% 
+    data.frame()
+  return(topgo_object)
 }
 
 return_enrichment_table<-function(de_object){
@@ -95,7 +107,7 @@ draw_heatmap<-function(dds_object, annotation_values = NULL, custom=FALSE){
     dds_fpkm<-fpkm(dds_object$dds)
     new_column_order<-dds_fpkm %>% colnames %>% sort()
     dds_fpkm <- dds_fpkm %>% data.frame() %>% dplyr::select(new_column_order)
-    dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 2 & padj < 0.0005) %>% rownames()
+    dds_significant<-dds_object$results %>% data.frame() %>% filter(abs(log2FoldChange) > 1.5 & padj < 0.05) %>% rownames()
     dds_toplot<-dds_fpkm[rownames(dds_fpkm) %in% dds_significant,]
   } else if (custom == TRUE) {
     new_column_order<-dds_object %>% colnames %>% sort()
@@ -155,7 +167,7 @@ draw_heatmap2 <-function(dds){
 
 
 
-get_significant_genes<-function(results_object, fold_change=2, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
+get_significant_genes<-function(results_object, fold_change=1.5, pvalue=0.05, mappings_format=FALSE, directional=FALSE){
   if (directional == TRUE) {
     de_genes_up<-results_object$results %>% data.frame() %>% filter(log2FoldChange > !!fold_change & padj < !!pvalue) %>% rownames()
     de_genes_down<-results_object$results %>% data.frame() %>% filter(log2FoldChange < -!!fold_change & padj < !!pvalue) %>% rownames()
