@@ -12,6 +12,7 @@ library(RColorBrewer)
 library(ggh4x)
 library(Polychrome)
 library(ggpubr)
+library(vegan)
 
 
 read_tax<-function(file, sampleid, rank, full_taxonomy=FALSE){
@@ -191,6 +192,140 @@ all %>% filter(Environment == "D. majalis environment" & Species == "D. traunste
 all %>% filter(Environment == "D. traunsteineri environment" & Species == "D. traunsteineri" & value > 1 & B == "Wallemiales") %>% dplyr::select(c("sample", "value")) %>% aggregate(.$value ~.$sample, ., FUN=sum) %>% set_colnames(c("sample", "value")) %>% dplyr::select("value") %>% pull() %>% mean()
 
 
+
+
+
+
+##################################################################
+#                    Shannon Diversity index                     #
+##################################################################
+
+
+
+BCI
+
+diversity(mM_K)
+
+##################
+#     majalis    #
+##################
+
+mM_K<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "majalis" & locality == "Kitzbuhl" & environment == "majalis") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+
+mT_K<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "majalis" & locality == "Kitzbuhl" & environment == "traunsteineri") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+
+mM_S<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "majalis" & locality == "St Ulrich" & environment == "majalis") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+mT_S<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "majalis" & locality == "St Ulrich" & environment == "traunsteineri") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+
+##################
+#  traunsteineri #
+##################
+
+tT_K<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "traunsteineri" & locality == "Kitzbuhl" & environment == "traunsteineri") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+tM_K<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "traunsteineri" & locality == "Kitzbuhl" & environment == "majalis") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+tT_S<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "traunsteineri" & locality == "St Ulrich" & environment == "traunsteineri") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+tM_S<-all %>% 
+  dplyr::select(sample, B2, value, species, locality, environment) %>% 
+  filter(species == "traunsteineri" & locality == "St Ulrich" & environment == "majalis") %>% 
+  group_by(B2, sample) %>% 
+  summarise(mean(value)) %>% 
+  set_colnames(c("Order", "Sample", "Mean")) %>% 
+  pivot_wider(names_from = Order, values_from = Mean) %>% 
+  replace(is.na(.), 0) %>% 
+  column_to_rownames("Sample")
+
+
+shannon_boxplot<-rbind(diversity(mM_K) %>% data.frame() %>% mutate(Species="D. majalis", Environment="M", Locality="Kitzbuhel") %>% rename("Shannon Index"="."),
+  diversity(mT_K) %>% data.frame() %>% mutate(Species="D. majalis", Environment="T", Locality="Kitzbuhel") %>% rename("Shannon Index"="."),
+  diversity(mM_S) %>% data.frame() %>% mutate(Species="D. majalis", Environment="M", Locality="St. Ulrich") %>% rename("Shannon Index"="."),
+  diversity(mT_S) %>% data.frame() %>% mutate(Species="D. majalis", Environment="T", Locality="St. Ulrich") %>% rename("Shannon Index"="."),
+  diversity(tT_K) %>% data.frame() %>% mutate(Species="D. traunsteineri", Environment="T", Locality="Kitzbuhel") %>% rename("Shannon Index"="."),
+  diversity(tM_K) %>% data.frame() %>% mutate(Species="D. traunsteineri", Environment="M", Locality="Kitzbuhel") %>% rename("Shannon Index"="."),
+  diversity(tT_S) %>% data.frame() %>% mutate(Species="D. traunsteineri", Environment="T", Locality="St. Ulrich") %>% rename("Shannon Index"="."),
+  diversity(tM_S) %>% data.frame() %>% mutate(Species="D. traunsteineri", Environment="M", Locality="St. Ulrich") %>% rename("Shannon Index"="."))
+
+jitter_colour<-ifelse(shannon_boxplot$Species == "D. majalis", "gold", "dodgerblue")
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure8_v3.pdf", height=22, width=20)
+ggplot(shannon_boxplot, aes(x=Environment, y=`Shannon Index`, fill=Environment)) + 
+  geom_boxplot(outlier.shape =NA, lwd=3, key_glyph = "rect") + 
+  geom_jitter(shape=21, size=13, position=position_jitter(0.2), fill=jitter_colour, colour="black", stroke=5) +
+  facet_wrap(~Locality) +
+  scale_fill_manual(values=c("gold", "dodgerblue")) +
+  theme(legend.position = c(0.8, 0.9),
+        #legend.position = "none",
+        text = element_text(size = 70),
+        legend.background=element_blank(),
+        legend.title=element_blank()) +
+  scale_fill_discrete(labels=c('D. majalis', 'D. traunsteineri'), type=c("gold", "dodgerblue"))
+dev.off()
+
+# check if there is any difference in standard deviation for species in home vs away fungal diversity
+shannon_boxplot %>% group_by(Species, Environment, Locality) %>% summarise_at(c("Shannon Index"), mean) 
+
 ##################################################################
 #               Pie charts (might not include these)             #
 ##################################################################
@@ -274,9 +409,19 @@ dev.off()
 
 
 
-##################################################################
-#                    Shannon Diversity index                     #
-##################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -306,9 +451,9 @@ test%>% filter(e=="T") %>% dplyr::select(m) %>% pull() %>% as.numeric() %>% mean
 test%>% filter(e=="T") %>% dplyr::select(w) %>% pull() %>% as.numeric() %>% mean()
 
 
-#############################################################################
-#     statistical tests (repetitive code but needs to be a bit formatted)   #
-#############################################################################
+#########################################################
+#                      LEFSE input                      #
+#########################################################
 
 mTS2r_data<-read_tax("/Users/katieemelianova/Desktop/Dactylorhiza/abundances/mTS2r_abundances.txt", "mTS2r", "familyy", full_taxonomy=TRUE)
 tMK2r_data<-read_tax("/Users/katieemelianova/Desktop/Dactylorhiza/abundances/tMK2r_abundances.txt", "tMK2r", "family", full_taxonomy=TRUE)
