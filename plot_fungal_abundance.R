@@ -326,6 +326,25 @@ dev.off()
 # check if there is any difference in standard deviation for species in home vs away fungal diversity
 shannon_boxplot %>% group_by(Species, Environment, Locality) %>% summarise_at(c("Shannon Index"), mean) 
 
+###########################################################################################
+#       t-test to show statistical difference between M and T in both K and S             #
+###########################################################################################
+
+T_environment_K<-shannon_boxplot %>% filter(Environment == "T" & Locality == "Kitzbuhel") %>% pull("Shannon Index")
+T_environment_S<-shannon_boxplot %>% filter(Environment == "T" & Locality == "St. Ulrich") %>% pull("Shannon Index")
+M_environment_K<-shannon_boxplot %>% filter(Environment == "M" & Locality == "Kitzbuhel") %>% pull("Shannon Index")
+M_environment_S<-shannon_boxplot %>% filter(Environment == "M" & Locality == "St. Ulrich") %>% pull("Shannon Index")
+
+res_K <- t.test(T_environment_K, M_environment_K)
+res_S <- t.test(M_environment_S, T_environment_S)
+
+T_environment<-shannon_boxplot %>% filter(Environment == "T") %>% pull("Shannon Index")
+M_environment<-shannon_boxplot %>% filter(Environment == "M") %>% pull("Shannon Index")
+
+res<-t.test(T_environment, M_environment)
+
+
+
 ##################################################################
 #               Pie charts (might not include these)             #
 ##################################################################
