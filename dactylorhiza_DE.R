@@ -863,16 +863,6 @@ de_constitutive_root_go$result %<>% mutate(zscore=sapply(de_constitutive_root_go
 
 
 
-
-
-
-
-zscore=sapply(de_constitutive_root_go$result$GO.ID, function(x) get_zscore(de_constitutive_root, x, de_constitutive_root_go$goData))
-
-
-
-
-
 testing_z<-rbind(de_majalis_only_root_go$result, 
   de_traunsteineri_only_root_go$result, 
   de_majalis_only_leaf_go$result, 
@@ -880,97 +870,52 @@ testing_z<-rbind(de_majalis_only_root_go$result,
   de_constitutive_leaf_go$result, 
   de_constitutive_root_go$result) %>% mutate(placeholder="placeholder")
 
-strip <- strip_themed(background_x = elem_list_rect(fill = c("deeppink", "gold", "dodgerblue")))
 
+strip <- strip_themed(background_y = elem_list_rect(fill = c(alpha('deeppink', 0.4), alpha('gold', 0.4), alpha('dodgerblue', 0.4))))
 
 zone<-testing_z %>% 
   filter(tissue == "Leaf") %>% 
   mutate(Term=factor(Term, levels=unique(Term[order(Significant)]))) %>%
-  #mutate(zscore=abs(zscore) + 1) %>%
-  ggplot(aes(x=Term, y=Significant, fill=zscore)) +
-  geom_bar(stat="identity") + 
-  coord_flip() +
+  ggplot(aes(x=placeholder, y=Term, fill=zscore), colour="black") +
+  geom_point(size=60, shape=21) + 
   scale_fill_gradient2(low = '#709AE1', high = '#FD7446') +
-  #facet_wrap(~ comparison, scales = "free", ncol=1) +
-  scale_y_reverse() +
-  facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1) +
+  #facet_wrap(~ comparison, scales = "free", ncol=1, strip.position="right") +
+  facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1, strip.position="left") +
+  #scale_y_discrete(position = "right") +
   theme(strip.text.x = element_blank(),
+        strip.text.y = element_text(size=60, margin = margin(0,1,0,1, "cm")),
         legend.position = "none",
-        axis.text.y = element_text(size = 16),
-        axis.text.x = element_text(size = 20),
-        axis.title.x = element_text(size=20))
-
-
+        axis.text.y = element_text(size = 60),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank()) +
+  scale_shape_manual(values=c(21))
 
 ztwo<-testing_z %>% 
   filter(tissue == "Root") %>% 
   mutate(Term=factor(Term, levels=unique(Term[order(Significant)]))) %>%
-  #mutate(zscore=abs(zscore) + 1) %>%
-  ggplot(aes(x=Term, y=Significant, fill=zscore)) +
-  geom_bar(stat="identity") + 
-  coord_flip() +
+  ggplot(aes(x=placeholder, y=Term, fill=zscore), colour="black") +
+  geom_point(size=60, shape=21) + 
   scale_fill_gradient2(low = '#709AE1', high = '#FD7446') +
-  facet_wrap(~ comparison, scales = "free", ncol=1) +
-  scale_x_discrete(position = "top") +
-  #facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1) +
-  theme(strip.text.x = element_blank(),
-        legend.position = "none",
-        axis.text.y = element_text(size = 16),
-        axis.text.x = element_text(size = 20),
-        axis.title.x = element_text(size=20))
-plot_grid(zone, ztwo, ncol = 2)
-
-
-
-testing_z %>% 
-  filter(tissue == "Leaf") %>% 
-  mutate(Term=factor(Term, levels=unique(Term[order(Significant)]))) %>%
-  ggplot(aes(x=placeholder, y=Term, colour=zscore)) +
-  geom_point(size=20) + 
-  #coord_flip() +
-  scale_colour_gradient2(low = '#709AE1', high = '#FD7446') +
-  facet_wrap(~ comparison, scales = "free", ncol=1) +
+  #facet_wrap(~ comparison, scales = "free", ncol=1, strip.position="right") +
+  facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1, strip.position="right") +
   scale_y_discrete(position = "right") +
-  #facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1) +
   theme(strip.text.x = element_blank(),
+        strip.text.y = element_text(size=60, margin = margin(0,1,0,1, "cm")),
         legend.position = "none",
-        axis.text.y = element_text(size = 16),
+        axis.text.y = element_text(size = 60),
         axis.text.x = element_blank(),
-        axis.title.x = element_blank())
+        axis.title.x = element_blank(),
+        plot.margin = margin(0, 8, 0, 0, "cm")) +
+  scale_shape_manual(values=c(21))
+
+
+
+
+
+
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure4_v2.pdf", height=30, width=55)
 plot_grid(zone, ztwo, ncol = 2)
-
-
-testing_z %>% 
-  filter(tissue == "Root") %>% 
-  mutate(Term=factor(Term, levels=unique(Term[order(Significant)]))) %>%
-  ggplot(aes(x=placeholder, y=Term, colour=zscore)) +
-  geom_point(size=20) + 
-  #coord_flip() +
-  scale_colour_gradient2(low = '#709AE1', high = '#FD7446') +
-  facet_wrap(~ comparison, scales = "free", ncol=1) +
-  scale_x_discrete(position = "top") +
-  #facet_wrap2(~ comparison, scales = "free", strip = strip, ncol=1) +
-  theme(strip.text.x = element_blank(),
-        legend.position = "none",
-        axis.text.y = element_text(size = 16),
-        axis.text.x = element_blank(),
-        axis.title.x = element_blank())
-plot_grid(zone, ztwo, ncol = 2)
-
-
-
-testing_z %>% ggplot(aes(x=Term, y=zscore)) +
-  geom_bar(stat="identity") + 
-  coord_flip() +
-  #facet_wrap(~ tissue, scales = "free", ncol=2) +
-  scale_x_discrete(position = "top")
-
-
-get_zscore(de_constitutive_root, "GO:0034219", de_constitutive_root_go$goData)
-
-
-
-test <- get_enriched_terms(de_majalis_only_root$gene_id, mp)
+dev.off()
 
 
 
@@ -982,55 +927,17 @@ test <- get_enriched_terms(de_majalis_only_root$gene_id, mp)
 
 
 
-sapply(test$result$GO.ID, function(x) get_zscore(de_majalis_only_root, x, test$goData))
 
 
 
 
 
-tra_up <- de_majalis_only_root %>% filter(gene_id %in% genesInTerm(test$goData, "GO:0055085")[[1]] & majalis_env < traunst_env)
-maj_up <- de_majalis_only_root %>% filter(gene_id %in% genesInTerm(test$goData, "GO:0055085")[[1]] & majalis_env > traunst_env)
-
-(nrow(maj_up) - nrow(tra_up))/(nrow(maj_up) + nrow(tra_up))
 
 
 
 
-de_majalis_only_root_maj_up_GO <- get_enriched_terms(de_majalis_only_root_maj_up, mp)
-de_majalis_only_root_tra_up_GO <- get_enriched_terms(de_majalis_only_root_tra_up, mp)
-de_traunsteineri_only_root_maj_up_GO <- get_enriched_terms(de_traunsteineri_only_root_maj_up, mp)
-de_traunsteineri_only_root_tra_up_GO <- get_enriched_terms(de_traunsteineri_only_root_tra_up, mp)
-de_majalis_only_leaf_maj_up_GO <- get_enriched_terms(de_majalis_only_leaf_maj_up, mp)
-de_majalis_only_leaf_tra_up_GO <- get_enriched_terms(de_majalis_only_leaf_tra_up, mp)
-de_traunsteineri_only_leaf_maj_up_GO <- get_enriched_terms(de_traunsteineri_only_leaf_maj_up, mp)
-de_traunsteineri_only_leaf_tra_up_GO <- get_enriched_terms(de_traunsteineri_only_leaf_tra_up, mp)
-de_constitutive_leaf_maj_up_GO <- get_enriched_terms(de_constitutive_leaf_maj_up, mp)
-de_constitutive_leaf_tra_up_GO <- get_enriched_terms(de_constitutive_leaf_tra_up, mp)
-de_constitutive_root_maj_up_GO <- get_enriched_terms(de_constitutive_root_maj_up, mp)
-de_constitutive_root_tra_up_GO <- get_enriched_terms(de_constitutive_root_tra_up, mp)
 
 
-genesInTerm(GO:0009611)
-test<-rbind(de_majalis_only_root_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="majalis_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_majalis_only_root_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="majalis_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_traunsteineri_only_root_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="traunsteineri_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_traunsteineri_only_root_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="traunsteineri_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_majalis_only_leaf_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="majalis_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_majalis_only_leaf_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="majalis_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_traunsteineri_only_leaf_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="traunsteineri_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_traunsteineri_only_leaf_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="traunsteineri_only") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_constitutive_leaf_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="constitutive") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_constitutive_leaf_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="constitutive") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_constitutive_root_maj_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="majalis_up", comparison="constitutive") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison),
-de_constitutive_root_tra_up_GO %>% filter(as.numeric(classicFisher) < 0.05) %>% mutate(direction="traunsteineri_up", comparison="constitutive") %>% dplyr::select(Term, Significant, classicFisher, direction, comparison))
-
-inner_join(de_majalis_only_root_maj_up_GO, de_majalis_only_root_tra_up_GO, by="Term")
-
-test %>% group_by(Term, comparison) %>% summarise_at("Significant", mean) %>% data.frame()
-
-test %>% melt()
-
-test %>% filter(comparison == "majalis_only")
 
 ###################################################
 #        Plot GO term enrichment Constitutive     #
