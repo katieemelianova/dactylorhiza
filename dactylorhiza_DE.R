@@ -119,13 +119,13 @@ root_samples<-read.table("Root_samples.txt", header=FALSE, col.names = c("sample
 #################################################################
 
 
-samples_to_exclude_leaf<-c("mTS2", 
-                      "tTS4",
-                      "tTK1",
-                      "mTK1",
-                      "tMK4",
-                      "tMS4",
-                      "tTK3")
+samples_to_exclude_leaf<-c("mTS2",
+                           "tTS4",
+                           "tTK1",
+                           "mTK1",
+                           "tMK4",
+                           "tMS4",
+                           "tTK3")
 
 samples_to_exclude_root<-c("mTS2r", 
                            "tTS4r",
@@ -550,18 +550,10 @@ dev.off()
 
 
 
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.pdf", width = 28, height = 22)
-pca_plot
-dev.off()
+#pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure2.pdf", width = 28, height = 22)
+#pca_plot
+#dev.off()
 
-percentRootKitzbuhelVar[1]
-percentRootKitzbuhelVar[2]
-percentRootStUlrichVar[1]
-percentRootStUlrichVar[2]
-percentLeafKitzbuhelVar[1]
-percentLeafKitzbuhelVar[2]
-percentLeafStUlrichVar[1]
-percentLeafStUlrichVar[2]
 
 ###############################################################
 #      Count how many genes are expressed total per tissue    #
@@ -904,20 +896,22 @@ dev.off()
 ############################################################################
 
 
-de_majalis_only_root_GO_df <- de_majalis_only_root_go$result %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="D. majalis Environment Only", tissue="Root")
-de_traunsteineri_only_root_GO_df <- de_traunsteineri_only_root_go$result %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. traunsteineri Environment Only", tissue="Root")
-de_majalis_only_leaf_GO_df <- de_majalis_only_leaf_go$result %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. majalis Environment Only", tissue="Leaf")
-de_traunsteineri_only_leaf_GO_df <- de_traunsteineri_only_leaf_go$result %>% prepare_go_df(top_terms = 1000)  %>% mutate(Environment="D. traunsteineri Environment Only", tissue="Leaf")
-de_constitutive_leaf_GO_df <- de_constitutive_leaf_go$result %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="Constitutively DE", tissue="Leaf")
-de_constitutive_root_GO_df<- de_constitutive_root_go$result %>% prepare_go_df(top_terms = 1000) %>% mutate(Environment="Constitutively DE", tissue="Root")
 
-rbind(de_majalis_only_root_GO_df,
-      de_traunsteineri_only_root_GO_df,
-      de_majalis_only_leaf_GO_df,
-      de_traunsteineri_only_leaf_GO_df,
-      de_constitutive_leaf_GO_df,
-      de_constitutive_root_GO_df) %>% 
-  write.xlsx(file = "SupplementaryTable5_constitutive_and_specific_GOterms.xlsx")
+to_write_constitutive_GO<-rbind(de_majalis_only_root_go$result,
+                                de_traunsteineri_only_root_go$resul,
+                                de_majalis_only_leaf_go$result,
+                                de_traunsteineri_only_leaf_go$resul,
+                                de_constitutive_leaf_go$result,
+                                de_constitutive_root_go$result) %>%
+  dplyr::select(tissue, comparison, Term, GO.ID, Significant, Annotated, zscore, classicFisher) %>% 
+  filter(as.numeric(classicFisher) < 0.05) %>%
+  set_colnames(c("Tissue", "Environment", "Term", "GO.ID", "Significant", "Annotated", "zscore", "classicFisher")) %>%
+  arrange(Environment, Tissue) %>%
+  mutate(Environment=as.factor(Environment))
+
+
+to_write_constitutive_GO %>% filter(Term == "mitochondrial transmembrane transport")
+write.xlsx(to_write_constitutive_GO, file = "SupplementaryTable5_constitutive_and_specific_GOterms.xlsx")
 
 
 
@@ -926,36 +920,32 @@ rbind(de_majalis_only_root_GO_df,
 #    Test for whether more constitutively DEGs are found by chance   #
 ######################################################################
 
+
 rootK_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
-rootK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+rootK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
 rootK_DEG_M <- c(rootK_DEG_M, rootK_consititutive)
-rootK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+rootK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment" & tissue == "Root" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
 rootK_DEG_T <- c(rootK_DEG_T, rootK_consititutive)
 
 rootS_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
-rootS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+rootS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
 rootS_DEG_M <- c(rootS_DEG_M, rootS_consititutive)
-rootS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+rootS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment" & tissue == "Root" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
 rootS_DEG_T <- c(rootS_DEG_T, rootS_consititutive)
 
 
 leafK_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
-leafK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+leafK_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
 leafK_DEG_M <- c(leafK_DEG_M, leafK_consititutive)
-leafK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
+leafK_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment" & tissue == "Leaf" & locality == "Kitzbuhl") %>% dplyr::select(gene_id) %>% pull()
 leafK_DEG_T <- c(leafK_DEG_T, leafK_consititutive)
 
 leafS_consititutive <- all_bound %>% filter(status == "Constitutively DE" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
-leafS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment only" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+leafS_DEG_M <- all_bound %>% filter(status == "DE in D. majalis environment" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
 leafS_DEG_M <- c(leafS_DEG_M, leafS_consititutive)
-leafS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment only" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
+leafS_DEG_T<-all_bound %>% filter(status == "DE in D. traunsteineri environment" & tissue == "Leaf" & locality == "St. Ulrich") %>% dplyr::select(gene_id) %>% pull()
 leafS_DEG_T <- c(leafS_DEG_T, leafS_consititutive)
 
-
-
-
-total_genes_tested_root<-unique(c(ktz_root$gene_id, stu_root$gene_id)) %>% length()
-total_genes_tested_leaf<-unique(c(ktz_leaf$gene_id, stu_leaf$gene_id)) %>% length()
 
 ResultRoot=supertest(list(rootK_DEG_M=rootK_DEG_M, 
                           rootK_DEG_T=rootK_DEG_T,
@@ -1111,7 +1101,9 @@ tMS_root_degs<-get_significant_genes(transplant_traunsteineri_stulrich_root, dir
 `traunsteineri (T-M St. Ulrich) root down` <- tMS_root_degs$down %>% length()
 
 
-# consitutively differentially expressed genes (between species comparisons)
+
+
+
 
 tmMK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl, directional = TRUE)
 tmTK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl, directional = TRUE)
@@ -1142,6 +1134,16 @@ tmTS_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_stulrich, dir
 `traunsteineri vs majalis (T St. Ulrich) root up` <- tmTS_root_degs$up %>% length()
 `traunsteineri vs majalis (T St. Ulrich) root down` <- tmTS_root_degs$down %>% length()
 
+# consitutively differentially expressed genes (between species comparisons) - no fold change stipulation
+tmMK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_M_kitzbuhl, directional = TRUE, fold_change=0)
+tmTK_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_T_kitzbuhl, directional = TRUE, fold_change=0)
+tmMK_root_degs<-get_significant_genes(traunsteineri_majalis_root_M_kitzbuhl, directional = TRUE, fold_change=0)
+tmTK_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_kitzbuhl, directional = TRUE, fold_change=0)
+
+tmMS_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_M_stulrich, directional = TRUE, fold_change=0)
+tmTS_leaf_degs<-get_significant_genes(traunsteineri_majalis_leaf_T_stulrich, directional = TRUE, fold_change=0)
+tmMS_root_degs<-get_significant_genes(traunsteineri_majalis_root_M_stulrich, directional = TRUE, fold_change=0)
+tmTS_root_degs<-get_significant_genes(traunsteineri_majalis_root_T_stulrich, directional = TRUE, fold_change=0)
 
 
 `traunsteineri vs majalis (Kitzbuhel) Leaf Mup Tup` <- intersect(tmMK_leaf_degs$up, tmTK_leaf_degs$up) %>% length()
@@ -1323,8 +1325,11 @@ all_enrichment_results<-rbind(transplant_majalis_kitzbuhl_root_up,
 #     Make a table of plastic gene GO terms in full supplementary table 6     #
 ###############################################################################
 
-all_enrichment_results %>% 
-  write.xlsx(file = "SupplementaryTable6_plastic_enriched_GOterms.xlsx")
+to_write<-all_enrichment_results %>% 
+  dplyr::select(tissue, species, locality, direction, GO.ID, Term, Annotated, Significant, Expected, classicFisher) %>% 
+  arrange(tissue, species, locality) %>%
+  mutate(tissue=as.factor(tissue), species=as.factor(species), locality=as.factor(locality))
+write.xlsx(to_write, file = "SupplementaryTable6_plastic_enriched_GOterms.xlsx")
 
 
 ###############################################################
@@ -1358,6 +1363,9 @@ goslim_percent_GO<-inner_join(majalis_out$go_table, trauns_out$go_table, by="Ter
   dplyr::select(term, percent_majalis, percent_traunsteineri) %>%
   mutate(delta=abs(percent_majalis-percent_traunsteineri)/(percent_majalis+percent_traunsteineri), 
          to_asterisk=ifelse(delta > 0.4, "*", ""))
+
+nonspecific_terms<-c("biological_process", "cellular process", "metabolic process", "catabolic process", "multicellular organism development")
+goslim_percent_GO %<>% filter(!(term %in% nonspecific_terms))
 
 # get the underlyijg GO terms 
 interesting_majalis<- goslim_percent_GO %>% filter(to_asterisk == "*" & percent_majalis > percent_traunsteineri) %>% dplyr::select(term) %>% pull() %>% as.character()
@@ -1399,8 +1407,10 @@ root_go_bound_newcol$Term<-str_replace(root_go_bound_newcol$Term, "2", "")
 # replace overly longterms with shorter versions
 root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress",]$Term <- "+ve reg. transcription from RNApolII prmtr in response to heat stress"
 root_go_bound_newcol[root_go_bound_newcol$Term == "positive regulation of transcription from RNA polymerase II promoter in response to heat stress  ",]$Term <- "+ve reg. transcription from RNApolI prmtr in response to heat stress"
-root_go_bound_newcol[root_go_bound_newcol$Term == "transmembrane receptor protein serine/threonine kinase signaling pathway",]$Term <- "transmembrane receptor prot serine/threonine kinase sig. pathway"
+root_go_bound_newcol[root_go_bound_newcol$Term == "double-strand break repair via break-induced replication",]$Term <- "DSB repair via break-induced replication"
 leaf_go_bound_newcol[leaf_go_bound_newcol$Term == "double-strand break repair via synthesis-dependent strand annealing",]$Term <- "dbl-strand break repair via synth-dependent strand annealing"
+
+
 
 
 leaf_go_bound_newcol_order <- leaf_go_bound_newcol %>%
@@ -1408,27 +1418,38 @@ leaf_go_bound_newcol_order <- leaf_go_bound_newcol %>%
   mutate(Direction = case_when(Direction == "up" ~ "Plastic Upregulated",
                                Direction == "down" ~"Plastic Downregulated"),
          Direction = factor(Direction, c("Plastic Upregulated", "Plastic Downregulated")),
-         Term = factor(Term, levels = unique(Term)))
+         Term = factor(Term, levels = unique(Term)),
+         Locality=factor(Locality, levels=(c("Kitzbuhel", "St. Ulrich"))),
+         Species=factor(Species, levels=c("D. majalis", "D. traunsteineri")))
 
 root_go_bound_newcol_order <- root_go_bound_newcol %>%
   arrange(Species, Locality) %>%
   mutate(Direction = case_when(Direction == "up" ~ "Plastic Upregulated",
                                Direction == "down" ~"Plastic Downregulated"),
          Direction = factor(Direction, c("Plastic Upregulated", "Plastic Downregulated")),
-         Term = factor(Term, levels = unique(Term)))
+         Term = factor(Term, levels = unique(Term)),
+         Locality=factor(Locality, levels=(c("Kitzbuhel", "St. Ulrich"))),
+         Species=factor(Species, levels=c("D. majalis", "D. traunsteineri")))
+
+
+
+
+leaf_go_bound_newcol_order$Term<-factor(leaf_go_bound_newcol_order$Term, levels=leaf_go_bound_newcol_order$Term[order(leaf_go_bound_newcol_order$Species, leaf_go_bound_newcol_order$Locality, decreasing = TRUE)])
+root_go_bound_newcol_order$Term<-factor(root_go_bound_newcol_order$Term, levels=root_go_bound_newcol_order$Term[order(root_go_bound_newcol_order$Species, root_go_bound_newcol_order$Locality, decreasing = TRUE)])
+
 
 
 a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, fill = Species, shape=Locality), colour="black") + 
-  geom_point(size=30) + facet_grid(rows=vars(Direction), scales="free_y", space= "free", switch = "y", cols=vars(tissue)) + 
-  theme(text = element_text(size = 82), 
+  geom_point(size=38) + facet_grid(rows=vars(Direction), scales="free_y", space= "free", switch = "y", cols=vars(tissue)) + 
+  theme(text = element_text(size = 75), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 90, margin = margin(0,1,0,1, "cm")),
+        strip.text.y = element_text(size = 88, margin = margin(0,1,0,1, "cm")),
         strip.text.x = element_blank(),
         panel.spacing=unit(1, "lines"),
         #plot.margin = margin("top", "right, "bottom", "left, "cm")) +
-        plot.margin = margin(0, 1, 0, 4, "cm")) + 
+        plot.margin = margin(0, 0.2, 0, 11, "cm")) + 
   #scale_size_continuous(range = c(13, 33)) + 
   guides(colour = guide_legend(override.aes = list(size=17))) + 
   scale_fill_manual(values=c("gold", "dodgerblue")) +
@@ -1440,12 +1461,12 @@ a<-ggplot(leaf_go_bound_newcol_order, aes(x=newcol, y=Term, fill = Species, shap
 
 
 b<-ggplot(root_go_bound_newcol_order, aes(x=newcol, y=Term, fill = Species, shape=Locality), colour="black") + 
-  geom_point(size=30) + facet_grid(rows=vars(Direction), scales="free", space= "free", cols=vars(tissue)) + 
-  theme(text = element_text(size = 82), 
+  geom_point(size=38) + facet_grid(rows=vars(Direction), scales="free", space= "free", cols=vars(tissue)) + 
+  theme(text = element_text(size = 75), 
         axis.text.x=element_blank(), 
         axis.title.x=element_blank(), 
         axis.title.y=element_blank(),
-        strip.text.y = element_text(size = 90, margin = margin(0,1,0,1, "cm")),
+        strip.text.y = element_text(size = 88, margin = margin(0,1,0,1, "cm")),
         strip.text.x = element_blank(),
         legend.text=element_text(size=65),
         legend.title=element_text(size=65),
@@ -1478,7 +1499,7 @@ leg <- cowplot::get_legend(c)
 leg<-as_ggplot(leg)
 
 # the null grid here is a neat trick to make the differetn laots closer together, especially when using negative rel width and heights for it
-pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.pdf", height=42, width=68, onefile=FALSE)
+pdf(file="~/Desktop/Dactylorhiza/dactylorhiza/Figure6.pdf", height=43, width=70, onefile=FALSE)
 scd<-(plot_grid(a, b, NULL, leg,
           ncol = 4,
           rel_widths = c(2, 2, -0.7, 1),
