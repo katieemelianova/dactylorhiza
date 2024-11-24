@@ -46,7 +46,7 @@ my_dfs<-list(mTS2r, tMK2r, mMK5r, tMS1r, mTK1r,
   mMK2r, tTS2r, tMK4r, mTS4r, tTS3r, mMK3r)
 
 
-samples_to_exclude<-c("mTS2r", "tTS4r", "tTK1r")
+samples_to_exclude<-c("mTS2r", "tTS4r", "tTK1r", "tMK4r")
 my_dfs %<>% 
   purrr::reduce(inner_join, by='TAXPATHSN') %>% 
   dplyr::select(-samples_to_exclude) 
@@ -55,9 +55,11 @@ my_dfs %<>%
 
 species <- c("species", colnames(my_dfs)[-1] %>% substr(1,1))
 envir <- c("environment", colnames(my_dfs)[-1] %>% substr(2,2))
+locality <- c("locality", colnames(my_dfs)[-1] %>% substr(3,3))
 sample_id <- c("sample_id", colnames(my_dfs)[-1])
 
-lfse_table<-rbind(species, envir, sample_id, my_dfs) %>% column_to_rownames(var="TAXPATHSN")
+lfse_table<-rbind(species, envir, locality, sample_id, my_dfs) %>% column_to_rownames(var="TAXPATHSN")
 write.table(lfse_table, file="lefse_table.txt", col.names = FALSE, quote = FALSE, sep = "\t")
+
 
 
