@@ -6,6 +6,18 @@ library(tibble)
 library(magrittr)
 library(DESeq2)
 
+
+####################################################################
+#      keep a record of species and source iof ITS sequence        #
+####################################################################
+
+# Ceratobasidium: https://unite.ut.ee/bl_forw_sh.php?sh_name=SH0110961.10FU#fndtn-panel3
+# Tulasnella: https://unite.ut.ee/bl_forw_sh.php?sh_name=SH1010020.10FU#fndtn-panel1
+# Serendipita: https://unite.ut.ee/bl_forw_sh.php?sh_name=SH0188460.10FU#fndtn-panel3
+# Sebacina: https://unite.ut.ee/bl_forw_sh.php?sh_name=SH0136516.10FU#fndtn-panel1
+# Russula: https://unite.ut.ee/bl_forw_sh.php?sh_name=SH0197565.10FU#fndtn-panel1
+
+
 ##################################################################################################
 #      make a function to read in featurecounts and remove unecessary strings in colnames        #
 ##################################################################################################
@@ -34,8 +46,18 @@ read_in_featurecounts<-function(input_path, strings_to_remove){
   return(list(counts=df_counts, lengths=gene_lengths))
 }
 
+
+######################################################
+#                    read in counts                  #
+######################################################
+
 strings_to_remove_root<-c("root_samples/", "_mycorrhizal.sorted.bam")
-test<-read_in_featurecounts("mycorrhizal_sequences_featurecounts", strings_to_remove_root)
+mycorrhizal_counts<-read_in_featurecounts("mycorrhizal_sequences_featurecounts", strings_to_remove_root)
+
+
+#######################################################
+#   normalise counts by ITS length and library size   #
+#######################################################
 
 library_size<-read_delim("library_size.txt", col_names = FALSE) %>% 
   set_colnames(c("sample", "library_size")) %>% 
@@ -44,17 +66,10 @@ library_size<-read_delim("library_size.txt", col_names = FALSE) %>%
 
 
 # divide counts by per-million scaling factor
-test$libnorm_counts<-apply(test$counts, 1, function(x) x/library_size$scaling_factor) %>% t()
+mycorrhizal_counts$libnorm_counts<-apply(mycorrhizal_counts$counts, 1, function(x) x/library_size$scaling_factor) %>% t()
 
 # divide libsize normalised counts by gene length to get fpkm
-test$libnorm_counts<-apply(test$libnorm_counts, 2, function(x) x/(test$lengths/1000))
-
-hm<-test$libnorm_counts
-
-
-
-
-
+mycorrhizal_counts$libnorm_counts<-apply(mycorrhizal_counts$libnorm_counts, 2, function(x) x/(mycorrhizal_counts$lengths/1000))
 
 
 ######################################################
@@ -82,9 +97,12 @@ root_samples<-read.table("Root_samples.txt", header=FALSE, col.names = c("sample
 root_samples<-annotate_samples(root_samples) %>% dplyr::select(c("species", "treatment"))
 
 
+####################################################
+#         make  histogram of read counts           #
+####################################################
 
-#pdf("mycorrhizal_reads_histogram.pdf", height=15, width=15)
-melt(hm) %>%
+pdf("SupplementaryFigure3_mycorrhizal_reads_histogram.pdf", height=15, width=15)
+melt(mycorrhizal_counts$libnorm_counts) %>%
   set_colnames(c("Taxon", "sample_id", "reads_mapped")) %>%
   mutate(species=case_when(substr(sample_id,1,1) == "m" ~ "majalis", substr(sample_id,1,1) == "t" ~ "traunsteineri")) %>%
   mutate(locality=case_when(substr(sample_id,3,3) == "S" ~ "St Ulrich", substr(sample_id,3,3) == "K" ~ "Kitzbuhl")) %>%
@@ -107,29 +125,33 @@ melt(hm) %>%
         panel.border = element_rect(colour = "grey", fill=NA, size=2),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   guides(fill="none")
-#dev.off()
+dev.off()
+
+####################################################
+#         make heatmap of read counts           #
+####################################################
 
 
-rownames(hm) <- str_split_i(rownames(hm), "_", 1)
+
+heatmap_data<-mycorrhizal_counts$libnorm_counts
+rownames(heatmap_data) <- str_split_i(rownames(heatmap_data), "_", 1)
 ann_colors = list(treatment = c(native="black", transplant="white"),
                   species=c(majalis="gold", traunsteineri="dodgerblue"))
-pheatmap::pheatmap(hm, 
+pdf("SupplementaryFigure4_mycorrhizal_reads_heatmap.pdf", height=10, width=15)
+pheatmap::pheatmap(heatmap_data, 
                    scale = "row", 
                    cluster_cols = FALSE,
                    cluster_rows = FALSE,
                    show_rownames = TRUE,
-                   show_colnames = TRUE,
+                   show_colnames = FALSE,
                    treeheight_row = 0, 
                    treeheight_col = 0,
                    annotation_col = root_samples,
                    gaps_col=c(9, 18, 27),
                    fontsize = 22,
                    annotation_colors=ann_colors)
-
-
-
-pdf("test.pdf", width=10, height=20)
-grid.arrange(bp, heat[[4]], nrow = 2)
 dev.off()
+
+
 
 
